@@ -23,7 +23,16 @@ The reply shows the consequence of the call the way a real provider would. All f
 Drag-and-drop is hard for keyboard, switch and screen-reader users, and WCAG 2.2 requires a non-dragging alternative anyway. Native checkboxes plus "Move up / Move down" buttons work with every input method. Buttons have names like "Move up: <statement>", keep focus on the moved item, and announce the new position.
 
 ## Why 2D first, 3D later
-A 2D page is accessible, light, works in an iframe and needs no GPU. A 3D night-station scene could be added later as an optional, decorative layer that does not carry any required information.
+A 2D page is accessible, light, works in an iframe and needs no GPU. The flat 2D illustrations stand in for it for now; a 3D night-station scene could be added later as an optional, decorative layer that does not carry any required information.
+
+## Why these illustrations, and how they stay accessible
+The first version was all text, so each step now has a flat, hand-built inline SVG scene (`illustrations.js`; no image files, libraries or canvas). One palette, set as `--il-*` custom properties in `styles.css`; the scenes keep a night-blue room in light and dark mode so the vitals stay high contrast.
+
+- Decorative vs informative: the intro room, the nurse's station, the provider call scene and the sunrise only repeat what the page text says, so they are `aria-hidden="true"` and `focusable="false"`. The bedside monitor on the chart step carries information, so it has `role="img"` and an `aria-label` built from the vitals data ("heart rate up from 84 to 112, blood pressure down from 128/78 to 92/54 since 6:00 p.m."). The full vitals table stays below it as the complete text equivalent, and the PLACEHOLDER tag sits right under the monitor.
+- Monitor numbers are real `<text>`, not paths, so they scale, can be restyled, and are found by browser text search and zoom. All values and the sparklines come from `scenario.js`, never hard-coded. The sparklines differ by line style and marker shape (solid circles for heart rate, dashed squares for systolic BP) and carry direct labels, so color is not the only cue.
+- The provider's mood is also in words. The face (calm, unsure, confused) follows how many criteria were met, and a visible line says it ("The provider sounds confused."), so meaning never depends on a face alone. The wrapper carries `data-provider-mood` for tests. Characters are simple and varied in skin tone, with no logos or brands.
+- Motion: only a monitor dot blinking three times and the call signal pulsing three times (each under 4 seconds). `prefers-reduced-motion` turns all animation off.
+- Layout: SVGs are `width: 100%; height: auto`, stay compact at 320px, and add no horizontal scroll. Monitor text is sized so it stays readable at that width.
 
 ## Focus and live regions
 Every step has an h2 with `tabindex="-1"`. When the step changes, code moves focus to it and updates the page title, so keyboard and screen-reader users know the view changed. One `role="status"` live region is reused for announcements (checkbox changes, moves, the provider reply). It is cleared before each message so repeats are still read.

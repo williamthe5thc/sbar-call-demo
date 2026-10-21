@@ -117,3 +117,51 @@ test('runs inside an iframe', async ({ page }) => {
   await passing(f);
   await expect(f.getByRole('heading', { name: 'Build the call' })).toBeVisible();
 });
+
+test('illustrations: decorative SVGs are hidden, monitor is named, provider mood follows outcome', async ({ page }) => {
+  const decorativeOk = async () => {
+    const bad = await page.locator('#app svg:not([role="img"])').evaluateAll((els) =>
+      els.filter((e) => e.getAttribute('aria-hidden') !== 'true' || e.getAttribute('focusable') !== 'false').length);
+    expect(bad).toBe(0);
+  };
+  await page.goto('/index.html');
+  await expect(page.locator('#app svg[aria-hidden="true"]')).toHaveCount(1); // intro
+  await decorativeOk();
+  await page.getByRole('button', { name: 'Start' }).click();
+  const monitor = page.locator('#app svg[role="img"]');
+  await expect(monitor).toHaveAttribute('aria-label', /112/);
+  await expect(monitor).toHaveAttribute('aria-label', /92\/54/);
+  await expect(monitor.locator('text', { hasText: '112' }).first()).toBeVisible(); // real text
+  await expect(page.locator('#app .scene.monitor')).toContainText('PLACEHOLDER');
+  await expect(page.getByRole('table')).toBeVisible(); // full table kept
+  await page.getByRole('button', { name: 'Build the call' }).click();
+  await decorativeOk();
+  await expect(page.locator('#app svg[aria-hidden="true"]')).toHaveCount(1); // station
+  // 0 met -> confused
+  await pick(page, ['s4']);
+  await page.getByRole('button', { name: 'Make the call' }).click();
+  await expect(page.locator('[data-provider-mood]').first()).toHaveAttribute('data-provider-mood', 'confused');
+  await expect(page.locator('.mood')).toContainText('sounds confused');
+  await decorativeOk();
+  // all met -> calm
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await page.locator('#cb-s4').uncheck();
+  await passing(page);
+  await page.getByRole('button', { name: 'Make the call' }).click();
+  await expect(page.locator('[data-provider-mood]').first()).toHaveAttribute('data-provider-mood', 'calm');
+  await expect(page.locator('.mood')).toContainText('sounds calm');
+  await page.getByRole('button', { name: 'See your evidence of mastery' }).click();
+  await decorativeOk();
+  await expect(page.locator('#app svg[aria-hidden="true"]')).toHaveCount(1);
+});
+
+test('provider is unsure when two or three criteria are met', async ({ page }) => {
+  await toBuild(page);
+  await passing(page);
+  // add a distractor so Prioritization fails: 3 of 4 met
+  const distractor = ids('S', (s) => s.kind === 'distractor' && !s.belongsIn)[0];
+  await pick(page, [distractor]);
+  await page.getByRole('button', { name: 'Make the call' }).click();
+  await expect(page.locator('[data-provider-mood]').first()).toHaveAttribute('data-provider-mood', 'unsure');
+  await expect(page.locator('.mood')).toContainText('unsure');
+});

@@ -128,6 +128,54 @@ tbody th { background: var(--surface); font-weight: 600; }
 textarea { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 2px solid var(--border); border-radius: .35rem; padding: .5rem; }
 .step-note { color: var(--muted); margin: 0; }
 
+/* ---------- Illustrations ----------
+   Flat scenes use one palette. Scenes keep a dark night-blue room in both color
+   schemes so the vitals stay high contrast; only the frame and a few tones shift.
+   Text inside scenes is 4.5:1 or better on its background; lines are 3:1 or better. */
+.scene {
+  --il-wall: #14284a; --il-wall2: #2b4a74; --il-floor: #0c1a30; --il-floor2: #1c3354;
+  --il-frame: #3a557d; --il-frame2: #4d6a94; --il-sky: #0a1a35; --il-moon: #f6f0d6;
+  --il-wood: #6b4f3a; --il-sheet: #dbe4f0; --il-pillow: #f3f6fb; --il-blanket: #3d83a8; --il-blanket2: #5b8f7a;
+  --il-lamp: #ffc857; --il-ink: #1b1411; --il-metal: #a9bad0; --il-iv: #bfe6f6; --il-clock: #f1f4f8;
+  --il-skin2: #e0ae82; --il-skin3: #8b5a3c; --il-hair: #1f1612; --il-hair2: #4a2c1c;
+  --il-scrub: #2a9d8f; --il-scrubdark: #1b6e65; --il-coat: #f4f7fa; --il-coatline: #8ea1b8;
+  --il-phone: #101c30; --il-desk: #8a6a4d; --il-desk2: #5e4632; --il-cup: #e9eef5;
+  --il-screen: #07111f; --il-screen2: #12233b; --il-text: #f2f6fb; --il-muted: #bccbe0; --il-grid: #6f87a8;
+  --il-hr: #ffb454; --il-bp: #7fd4ff; --il-ok: #7ee2a0; --il-line: #9fc2ea;
+  --il-dawn1: #f6b273; --il-dawn2: #ffd9a0; --il-sun: #fff0b8; --il-hill: #d9845a; --il-pot: #c9724a; --il-leaf: #62b37f;
+  margin: 1rem 0; border-radius: .75rem; overflow: hidden; background: var(--il-wall);
+  border: 1px solid var(--border);
+}
+.scene { max-width: 40rem; }
+.scene svg { display: block; width: 100%; height: auto; }
+.scene-dawn { background: var(--il-wall2); }
+.scene figcaption, .scene-cap { background: var(--surface); color: var(--text); padding: .5rem .85rem; font-size: .95rem; }
+figure.scene { margin: 1rem 0; }
+.scene.monitor { max-width: 32rem; }
+@media (prefers-color-scheme: dark) {
+  .scene { --il-wall: #0f2040; --il-floor: #091425; --il-frame: #34507a; border-color: var(--border); }
+}
+
+.blink { animation: blink 1s ease-in-out 3; }
+@keyframes blink { 50% { opacity: .25; } }
+.ring { animation: ring 1.2s ease-in-out 3; transform-box: fill-box; transform-origin: left center; }
+@keyframes ring { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+.provider-card { margin: .5rem 0 .25rem; }
+.provider-card .scene { margin: 0 0 .5rem; max-width: none; }
+.mood { margin: .25rem 0; font-weight: 700; }
+.bubble {
+  position: relative; margin: .75rem 0 .25rem; padding: .75rem 1rem; border: 2px solid var(--border);
+  border-radius: .75rem; background: var(--bg); color: var(--text);
+}
+.bubble::before {
+  content: ""; position: absolute; top: -10px; right: 3rem; width: 16px; height: 16px;
+  background: var(--bg); border-left: 2px solid var(--border); border-top: 2px solid var(--border); transform: rotate(45deg);
+}
+.bubble p { margin: .25rem 0; }
+@media (max-width: 30rem) {
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

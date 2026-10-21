@@ -1,6 +1,7 @@
 // App logic: state, rendering, scoring, focus and attempt history.
 // No clinical content here; it all comes from scenario.js.
 import { scenario } from './scenario.js';
+import { introScene, monitorFigure, nurseStationScene, providerScene, sunriseScene, MOODS, moodFor } from './illustrations.js';
 
 const app = document.getElementById('app');
 const live = document.getElementById('live');
@@ -121,6 +122,7 @@ function chartHtml() {
 function showIntro() {
   go('Welcome', `
     <h2 tabindex="-1" data-step-heading>Welcome</h2>
+    ${introScene()}
     <p class="label">${esc(scenario.label)}</p>
     <h3>The skill this practices</h3>
     <p>${esc(scenario.competency)}</p>
@@ -143,6 +145,7 @@ function showChart() {
     <h2 tabindex="-1" data-step-heading>Chart review</h2>
     <p class="banner">${esc(scenario.banner)}</p>
     <p>${esc(scenario.situation)}</p>
+    ${monitorFigure(scenario.chart, tag)}
     ${chartHtml()}
     <div class="btn-row"><button type="button" class="btn" data-act="build">Build the call</button></div>`);
 }
@@ -179,6 +182,7 @@ function renderPicked(key) {
 function showBuild() {
   go('Build the call', `
     <h2 tabindex="-1" data-step-heading>Build the call</h2>
+    ${nurseStationScene()}
     <p>Tick the statements you would say in each part of the call. Chosen statements appear in a list below each group, in the order you will say them. Use Move up and Move down to reorder.</p>
     <details>
       <summary>View chart</summary>
@@ -212,13 +216,18 @@ function showFeedback() {
   const r = state.last;
   const names = Object.fromEntries(scenario.criteria.map((c) => [c.id, c]));
   const allMet = r.metCount === 4;
+  const mood = moodFor(r.metCount);
   go('Feedback', `
     <h2 tabindex="-1" data-step-heading>Feedback</h2>
     <p class="step-note">Attempt ${state.attempts.length}: ${r.metCount} of 4 criteria met.</p>
     <h3>Phone transcript</h3>
     <div class="transcript">
       ${scriptHtml()}
-      <p><strong>Provider:</strong> ${esc(r.reply)}</p>
+      <div class="provider-card" data-provider-mood="${mood}">
+        ${providerScene(mood)}
+        <p class="mood"><strong>Provider:</strong> ${esc(MOODS[mood].text)}</p>
+        <div class="bubble"><p>${esc(r.reply)}</p></div>
+      </div>
     </div>
     <h3>Your criteria</h3>
     <ul class="criteria">${r.results.map((c) => {
@@ -241,6 +250,7 @@ function showFeedback() {
 function showMastery() {
   go('Evidence of mastery', `
     <h2 tabindex="-1" data-step-heading>Evidence of mastery</h2>
+    ${sunriseScene()}
     <p>All four criteria are met. Here is your record.</p>
     <div class="table-wrap" role="region" aria-label="Attempt history table" tabindex="0">
       <table>

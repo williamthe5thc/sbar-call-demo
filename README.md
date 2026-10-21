@@ -23,7 +23,7 @@ npx playwright install chromium   # first time only
 npm test
 ```
 
-Playwright + axe-core (WCAG 2.0/2.1/2.2 A and AA tags) scan every step in light and dark, plus a keyboard-only run to mastery, a 320px reflow check and an iframe check.
+Playwright + axe-core (WCAG 2.0/2.1/2.2 A and AA tags) scan every step in light and dark, plus checks that decorative SVGs are hidden, the monitor is named from the data and the provider's expression follows the outcome, a keyboard-only run to mastery, a 320px reflow check and an iframe check.
 
 ## Embed (for example in Open edX)
 
@@ -43,7 +43,7 @@ Everything is in `scenario.js`. Copy it and change: `chart` (vitals table, notes
 - `kind: 'distractor'`: should not be chosen. Add `belongsIn: 'B'` (a section key) if it is real content shown in the wrong section; add `why` if it is irrelevant or vague.
 - `request: true` / `timeFrame: true` mark Recommendation statements for the Clear request rule.
 
-`app.js` needs no changes.
+`app.js` needs no changes. Scene artwork is in `illustrations.js` (hand-built SVG functions; the monitor reads the vitals from the scenario).
 
 ## Credits and sources
 
