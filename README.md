@@ -39,7 +39,7 @@ Always give the iframe a `title`. All paths are relative, so it also works under
 
 Everything is in `scenario.js`. Copy it and change: `chart` (vitals table, notes, meds, labs), `sections[].statements`, `criteria` feedback text and `replies`.
 
-- `kind: 'required'` with `order`: must be chosen, in that order within its section.
+- `kind: 'required'`: must be chosen. Add `lead: true` to a statement that must come first in its section (the scenario uses this only for the call's opening line).
 - `kind: 'distractor'`: should not be chosen. Add `belongsIn: 'B'` (a section key) if it is real content shown in the wrong section; add `why` if it is irrelevant or vague.
 - `request: true` / `timeFrame: true` mark Recommendation statements for the Clear request rule.
 

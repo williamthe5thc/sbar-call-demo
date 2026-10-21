@@ -2,8 +2,10 @@
 // the data; app.js has no clinical content in it.
 //
 // Statement flags:
-//   kind: 'required'   -> must be selected (completeness); `order` is its expected
-//                         position inside its own section (organization).
+//   kind: 'required'   -> must be selected (completeness).
+//   lead: true         -> if selected, must come first in its section (organization).
+//                         Only the opening line of the call has one: say who you are
+//                         and who the patient is before anything else.
 //   kind: 'distractor' -> should not be selected (prioritization), unless it has
 //                         `belongsIn`, which means it is real content that was put
 //                         in the wrong SBAR section (organization).
@@ -61,9 +63,9 @@ export const scenario = {
       name: 'Situation',
       prompt: 'What is happening right now? Who is the patient and why are you calling?',
       statements: [
-        { id: 's1', kind: 'required', order: 1, text: 'This is the night nurse calling about Mr. Morgan in Room 12, day 1 after abdominal surgery.' },
-        { id: 's2', kind: 'required', order: 2, text: 'His heart rate has risen from 84 to 112 and his blood pressure has fallen from 128/78 to 92/54 since 6 p.m.' },
-        { id: 's3', kind: 'required', order: 3, text: 'His surgical drain output has increased to 120 mL since the last check.' },
+        { id: 's1', kind: 'required', lead: true, text: 'This is the night nurse calling about Mr. Morgan in Room 12, day 1 after abdominal surgery.' },
+        { id: 's2', kind: 'required', text: 'His heart rate has risen from 84 to 112 and his blood pressure has fallen from 128/78 to 92/54 since 6 p.m.' },
+        { id: 's3', kind: 'required', text: 'His surgical drain output has increased to 120 mL since the last check.' },
         { id: 's4', kind: 'distractor', why: 'is not relevant to why you are calling', text: 'His daughter brought flowers this afternoon and visiting hours are over.' },
         { id: 's5', kind: 'distractor', belongsIn: 'B', text: 'He has a history of high blood pressure treated with a daily medication.' },
       ],
@@ -73,9 +75,9 @@ export const scenario = {
       name: 'Background',
       prompt: 'What does the provider need to know about how he got here?',
       statements: [
-        { id: 'b1', kind: 'required', order: 1, text: 'He had a bowel resection yesterday morning through an open abdominal incision.' },
-        { id: 'b2', kind: 'required', order: 2, text: 'At 6 p.m. his blood pressure was 128/78 and his abdomen was soft.' },
-        { id: 'b3', kind: 'required', order: 3, text: 'He is on a morphine PCA and received a prophylactic anticoagulant at 8 p.m.' },
+        { id: 'b1', kind: 'required', text: 'He had a bowel resection yesterday morning through an open abdominal incision.' },
+        { id: 'b2', kind: 'required', text: 'At 6 p.m. his blood pressure was 128/78 and his abdomen was soft.' },
+        { id: 'b3', kind: 'required', text: 'He is on a morphine PCA and received a prophylactic anticoagulant at 8 p.m.' },
         { id: 'b4', kind: 'distractor', why: 'is not relevant to this change in condition', text: 'He lives with his wife and enjoys gardening.' },
         { id: 'b5', kind: 'distractor', belongsIn: 'A', text: 'His abdomen is now firm and distended.' },
       ],
@@ -85,9 +87,9 @@ export const scenario = {
       name: 'Assessment',
       prompt: 'What do you think is going on? What have you found?',
       statements: [
-        { id: 'a1', kind: 'required', order: 1, text: 'His abdomen is firm and distended and he rates his pain 8 out of 10.' },
-        { id: 'a2', kind: 'required', order: 2, text: 'His skin is cool and clammy, his respiratory rate is 22, and his urine output was 20 mL in the last hour.' },
-        { id: 'a3', kind: 'required', order: 3, text: 'I am concerned he may be bleeding or developing a serious complication.' },
+        { id: 'a1', kind: 'required', text: 'His abdomen is firm and distended and he rates his pain 8 out of 10.' },
+        { id: 'a2', kind: 'required', text: 'His skin is cool and clammy, his respiratory rate is 22, and his urine output was 20 mL in the last hour.' },
+        { id: 'a3', kind: 'required', text: 'I am concerned he may be bleeding or developing a serious complication.' },
         { id: 'a4', kind: 'distractor', why: 'is not relevant to this change in condition', text: 'The IV site in his left arm looks clean and dry.' },
         { id: 'a5', kind: 'distractor', belongsIn: 'R', text: 'He needs a stat blood count and a fluid bolus.' },
       ],
@@ -97,9 +99,9 @@ export const scenario = {
       name: 'Recommendation',
       prompt: 'What do you need from the provider, and how soon?',
       statements: [
-        { id: 'r1', kind: 'required', order: 1, request: true, text: 'Please come to the bedside to evaluate him.' },
-        { id: 'r2', kind: 'required', order: 2, request: true, text: 'Please order a stat blood count and an IV fluid bolus.' },
-        { id: 'r3', kind: 'required', order: 3, timeFrame: true, text: 'I need you here, or a call back with orders, within 15 minutes.' },
+        { id: 'r1', kind: 'required', request: true, text: 'Please come to the bedside to evaluate him.' },
+        { id: 'r2', kind: 'required', request: true, text: 'Please order a stat blood count and an IV fluid bolus.' },
+        { id: 'r3', kind: 'required', timeFrame: true, text: 'I need you here, or a call back with orders, within 15 minutes.' },
         { id: 'r4', kind: 'distractor', why: 'is vague and gives no time frame', text: 'Let me know whenever you get a chance.' },
         { id: 'r5', kind: 'distractor', belongsIn: 'S', text: 'His heart rate is 112 and his blood pressure is 92/54.' },
         { id: 'r6', kind: 'distractor', why: 'is not relevant to this request', text: 'I will update the charge nurse at the end of my shift.' },
@@ -112,11 +114,12 @@ export const scenario = {
     {
       id: 'organization',
       name: 'Organization',
-      description: 'Each statement is in its proper SBAR section, and the key items run in a sensible order.',
-      metTip: 'Every statement is in the right section and the key items are in a sensible order.',
+      description: 'Every SBAR section has content, each statement is in its proper section, and the call opens by saying who you are and who the patient is.',
+      metTip: 'Every section has content, every statement is in the right section, and the call opens the right way.',
       emptyTip: 'Select statements for the call first.',
       misplacedTip: '"{text}" belongs in {section}, not here.',
-      orderTip: 'In {section}, put "{first}" before "{second}".',
+      orderTip: 'Open {section} with "{first}" so the provider knows who is calling and about whom.',
+      emptySectionTip: '{section} is empty. Every part of SBAR needs at least one statement.',
     },
     {
       id: 'completeness',

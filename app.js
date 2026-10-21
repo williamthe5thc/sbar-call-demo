@@ -29,19 +29,17 @@ function score(sel) {
   const C = Object.fromEntries(scenario.criteria.map((c) => [c.id, c]));
   const results = [];
 
-  // Organization: nothing in the wrong section, and required items in expected order.
+  // Organization: every section has something, nothing is in the wrong section,
+  // and the opening line (the statement marked `lead`) comes first.
   const orgTips = [];
   for (const sec of scenario.sections) {
     const items = chosen(sec.key);
+    if (!items.length) orgTips.push(fill(C.organization.emptySectionTip, { section: sec.name }));
     for (const s of items) {
       if (s.belongsIn) orgTips.push(fill(C.organization.misplacedTip, { text: s.text, section: secName(s.belongsIn) }));
     }
-    const req = items.filter((s) => s.kind === 'required');
-    for (let i = 1; i < req.length; i++) {
-      if (req[i].order < req[i - 1].order) {
-        orgTips.push(fill(C.organization.orderTip, { section: sec.name, first: req[i].text, second: req[i - 1].text }));
-      }
-    }
+    const lead = items.find((s) => s.lead);
+    if (lead && items[0] !== lead) orgTips.push(fill(C.organization.orderTip, { section: sec.name, first: lead.text }));
   }
   results.push(total === 0
     ? { id: 'organization', met: false, tips: [C.organization.emptyTip] }
@@ -126,8 +124,8 @@ function showIntro() {
     <h2 tabindex="-1" data-step-heading>Welcome</h2>
     <p class="label">${esc(scenario.label)}</p>
     <h3>The competency this practices</h3>
-    <figure style="margin:0">
-      <blockquote style="margin:.5rem 0">${esc(comp.quote)}</blockquote>
+    <figure class="competency">
+      <blockquote>${esc(comp.quote)}</blockquote>
       <figcaption>${esc(comp.note)} Area: ${esc(comp.area)}. <a href="${comp.url}" target="_blank" rel="noopener">WGU RN-to-BSN program page<span class="visually-hidden"> (opens in a new tab)</span></a></figcaption>
     </figure>
     <h3>Why practice this</h3>
@@ -230,8 +228,8 @@ function showFeedback() {
     <ul class="criteria">${r.results.map((c) => {
       const def = names[c.id];
       const tips = c.met ? [def.metTip] : c.tips;
-      return `<li><h3>${def.name}
-        <span class="badge ${c.met ? 'met' : 'notyet'}"><span aria-hidden="true">${c.met ? '✓' : '✗'}</span> ${c.met ? 'Met' : 'Not yet'}</span></h3>
+      return `<li><h4>${def.name}
+        <span class="badge ${c.met ? 'met' : 'notyet'}"><span aria-hidden="true">${c.met ? '✓' : '✗'}</span> ${c.met ? 'Met' : 'Not yet'}</span></h4>
         <p class="step-note">${esc(def.description)}</p>
         ${tips.map((t) => `<p>${esc(t)}</p>`).join('')}</li>`;
     }).join('')}</ul>

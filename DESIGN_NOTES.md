@@ -10,7 +10,7 @@ Communication in BSN programs is still taught mostly as knowledge rather than as
 The program competency is "The graduate effectively communicates and collaborates with interprofessional teams, persons, families, and communities" (publicly listed WGU RN-to-BSN competency). Competencies are met or not yet met, so the demo shows Met / Not yet per criterion, allows unlimited retries with no time limit, and shows no scores or percentages. Mastery means all four are met; the attempt history is the evidence.
 
 ## Why these four criteria
-- Organization: statements are in the right SBAR section and key items are in a sensible order.
+- Organization: every SBAR section has content, statements are in the right section, and the call opens with who is calling and about whom. I only enforce order where it clearly matters (the opening line); forcing one "correct" order for the rest would mark down good calls.
 - Completeness: required items are present.
 - Prioritization: no distracting details.
 - Clear request: a specific ask plus a time frame.
