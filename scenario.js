@@ -16,16 +16,11 @@
 export const scenario = {
   title: 'The 2 a.m. Call',
   label:
-    'Personal portfolio demo. Not affiliated with WGU. Fictional patient. Clinical content requires review by a nursing subject matter expert.',
+    'Personal portfolio demo. Fictional patient. Clinical content requires review by a nursing subject matter expert.',
   banner: 'All clinical values are placeholders and need nursing SME review.',
 
-  competency: {
-    quote:
-      'The graduate effectively communicates and collaborates with interprofessional teams, persons, families, and communities.',
-    area: 'Professional Communication/Collaboration',
-    url: 'https://www.wgu.edu/online-nursing-health-degrees/rn-to-bsn-nursing-bachelors-program.html',
-    note: 'Based on a publicly listed WGU program competency (RN-to-BSN).',
-  },
+  // The skill this case practices, written for this demo.
+  competency: "Communicate a patient's changing condition to a provider clearly and concisely, using SBAR.",
 
   // Wording from the verified "safe wording" in the project's source notes.
   rationale:

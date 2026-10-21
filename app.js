@@ -119,15 +119,11 @@ function chartHtml() {
 /* ---------- Steps ---------- */
 
 function showIntro() {
-  const comp = scenario.competency;
   go('Welcome', `
     <h2 tabindex="-1" data-step-heading>Welcome</h2>
     <p class="label">${esc(scenario.label)}</p>
-    <h3>The competency this practices</h3>
-    <figure class="competency">
-      <blockquote>${esc(comp.quote)}</blockquote>
-      <figcaption>${esc(comp.note)} Area: ${esc(comp.area)}. <a href="${comp.url}" target="_blank" rel="noopener">WGU RN-to-BSN program page<span class="visually-hidden"> (opens in a new tab)</span></a></figcaption>
-    </figure>
+    <h3>The skill this practices</h3>
+    <p>${esc(scenario.competency)}</p>
     <h3>Why practice this</h3>
     <p>${esc(scenario.rationale)}</p>
     <h3>How it works</h3>

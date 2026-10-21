@@ -2,7 +2,7 @@
 
 An accessible, competency-based SBAR handoff simulation. A learner reviews a chart for a fictional post-operative patient, builds a call to the on-call provider, gets feedback on four criteria, and retries until all four are met.
 
-> Personal portfolio demo. Not affiliated with WGU. Fictional patient. Clinical content requires review by a nursing subject matter expert.
+> Personal portfolio demo. Fictional patient. Clinical content requires review by a nursing subject matter expert.
 
 All clinical values are placeholders. Plain HTML, CSS and vanilla JS (ES modules). No build step, no runtime dependencies, no CDNs, no audio.
 
@@ -47,7 +47,6 @@ Everything is in `scenario.js`. Copy it and change: `chart` (vitals table, notes
 
 ## Credits and sources
 
-- Competency wording: WGU RN-to-BSN program page, "Professional Communication/Collaboration", https://www.wgu.edu/online-nursing-health-degrees/rn-to-bsn-nursing-bachelors-program.html
 - Wittenberg, Goldsmith, Prince-Paul & Beltran (2021), J Nurs Educ 60(11), 618-624, https://doi.org/10.3928/01484834-20210913-03
 - Yun, Lee, Kang & Park (2023), BMC Med Educ 23:507, https://doi.org/10.1186/s12909-023-04495-8 (most included studies were low quality)
 - IHI SBAR tool: https://www.ihi.org/resources/tools/sbar-tool-situation-background-assessment-recommendation

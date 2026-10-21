@@ -7,7 +7,7 @@ SBAR (Situation, Background, Assessment, Recommendation) is a common structure f
 Communication in BSN programs is still taught mostly as knowledge rather than as a practiced skill (Wittenberg et al., 2021). SBAR-based simulation has improved communication clarity in some studies, though the evidence is mostly low quality (Yun et al., 2023: six of 12 studies favored it, most were weak). This demo gives repeated, low-stakes practice building the call. It does not claim to improve outcomes.
 
 ## Why competency-based mastery, not grades
-The program competency is "The graduate effectively communicates and collaborates with interprofessional teams, persons, families, and communities" (publicly listed WGU RN-to-BSN competency). Competencies are met or not yet met, so the demo shows Met / Not yet per criterion, allows unlimited retries with no time limit, and shows no scores or percentages. Mastery means all four are met; the attempt history is the evidence.
+The skill is written as one competency: "Communicate a patient's changing condition to a provider clearly and concisely, using SBAR." Competencies are met or not yet met, so the demo shows Met / Not yet per criterion, allows unlimited retries with no time limit, and shows no scores or percentages. Mastery means all four are met; the attempt history is the evidence.
 
 ## Why these four criteria
 - Organization: every SBAR section has content, statements are in the right section, and the call opens with who is calling and about whom. I only enforce order where it clearly matters (the opening line); forcing one "correct" order for the rest would mark down good calls.

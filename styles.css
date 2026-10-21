@@ -132,5 +132,3 @@ textarea { width: 100%; font: inherit; color: var(--text); background: var(--bg)
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
-.competency { margin: 0; }
-.competency blockquote { margin: .5rem 0; }
