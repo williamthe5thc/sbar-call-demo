@@ -37,6 +37,8 @@ for (const scheme of ['light', 'dark']) {
     test.use({ colorScheme: scheme });
 
     test('every step', async ({ page }) => {
+      // Many full-page scans with software WebGL (SwiftShader) in CI; give it room.
+      test.setTimeout(120_000);
       await page.goto('/index.html');
       await scan(page); // intro
       await page.getByRole('button', { name: 'Start' }).click();
