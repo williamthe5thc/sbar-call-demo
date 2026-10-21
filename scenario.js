@@ -69,7 +69,7 @@ export const scenario = {
     { id: 'skin', label: "Patient's skin", x: 28.5, y: 53.6, tx: 32.8, ty: 62.8,
       findings: ['His skin feels cool to the touch.', 'His skin is damp.'] },
     { id: 'monitor', label: 'Monitor', x: 41.3, y: 8, tx: 41.3, ty: 13, panel: 'monitor',
-      findings: ['The monitor shows a heart rate of 112 beats per minute.', 'Blood pressure reads 92/54 mmHg.', 'Respiratory rate is 22 breaths per minute and SpO2 is 94%.', 'The trend on the monitor starts at 6:00 p.m., with a heart rate of 84 and a blood pressure of 128/78.'] },
+      findings: [] /* filled from chart.vitals below */ },
     { id: 'ivsite', label: 'IV site', x: 41.9, y: 41.6, tx: 42, ty: 69.4,
       findings: ['The IV site in his left arm is clean and dry.', 'There is no redness or swelling around it.'] },
     { id: 'drain', label: 'Surgical drain', x: 51.3, y: 90.4, tx: 51.3, ty: 74.4,
@@ -187,3 +187,17 @@ export const scenario = {
     },
   },
 };
+
+// The monitor shows the latest row of the vitals table, so the two can never disagree.
+{
+  const cols = scenario.chart.vitalsColumns;
+  const first = scenario.chart.vitals[0];
+  const last = scenario.chart.vitals[scenario.chart.vitals.length - 1];
+  const v = (row, name) => row.values[cols.findIndex((c) => c.startsWith(name))];
+  scenario.assessment.find((a) => a.id === 'monitor').findings = [
+    `The monitor shows a heart rate of ${v(last, 'Heart rate')} beats per minute.`,
+    `Blood pressure reads ${v(last, 'Blood pressure')} mmHg.`,
+    `Respiratory rate is ${v(last, 'Resp. rate')} breaths per minute and SpO2 is ${v(last, 'SpO2')}.`,
+    `At ${first.time} the heart rate was ${v(first, 'Heart rate')} and blood pressure was ${v(first, 'Blood pressure')}.`,
+  ];
+}
