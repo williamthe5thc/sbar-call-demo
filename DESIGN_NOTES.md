@@ -52,3 +52,11 @@ Nursing SME review; learner testing; optional 3D ambient layer; xAPI statements 
 - [ ] Learner testing, including with screen reader users.
 - [ ] Manual screen reader pass (NVDA/JAWS/VoiceOver); automated axe is not enough.
 - [ ] Decide whether to add xAPI.
+
+## Why feedback gives hints, not answers
+When a required item is missing, the Completeness tip names what kind of
+information is missing ("Situation is missing how his heart rate and blood
+pressure have changed") instead of quoting the statement. Quoting it would let a
+learner copy the answer key without reading the chart, and the skill being
+practiced is choosing what matters. Tips about statements the learner already
+chose can quote them, because those are the learner's own words.

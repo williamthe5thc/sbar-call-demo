@@ -51,7 +51,7 @@ function score(sel) {
   for (const sec of scenario.sections) {
     for (const s of sec.statements) {
       if (s.kind === 'required' && !sel[sec.key].includes(s.id)) {
-        missing.push(fill(C.completeness.missingTip, { section: sec.name, text: s.text }));
+        missing.push(fill(C.completeness.missingTip, { section: sec.name, hint: s.hint }));
       }
     }
   }
@@ -225,7 +225,7 @@ function showFeedback() {
       ${scriptHtml()}
       <div class="provider-card" data-provider-mood="${mood}">
         ${providerScene(mood)}
-        <p class="mood"><strong>Provider:</strong> ${esc(MOODS[mood].text)}</p>
+        <p class="mood"><strong>${esc(MOODS[mood].text)}</strong></p>
         <div class="bubble"><p>${esc(r.reply)}</p></div>
       </div>
     </div>
