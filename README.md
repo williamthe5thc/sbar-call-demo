@@ -21,6 +21,10 @@ The assess step opens in a 3D bedside room when the browser supports WebGL, and 
 
 The 3D canvas is decorative; every finding is still text on the page. See `DESIGN_NOTES.md`.
 
+## Immersive version (beta), scene 1
+
+`scene1.html` is a full-window, first-person 3D version of the bedside assessment (scene 1 only). Open it from the link on the intro of the standard version ("Try the immersive version (beta)"), or go to `http://localhost:4318/scene1.html` after `npm start`. Choose a movement style on the start screen (jump between spots, or smooth walking), then look around by dragging or with the Turn and Look buttons, move with the Go to buttons or the arrow keys or W A S D while the 3D view has focus (Q and E turn), and select objects in the room or in "Objects nearby" to examine them. "I'm ready to call the provider" ends the scene and offers "Continue in the standard version", which opens the Build step with your notes (passed through `sessionStorage`). Files: `scene1.js` (page and input), `world1.js` (3D world, camera, collision), `room1.js` (room, hallway and procedural textures), `scene1.css`. See `DESIGN_NOTES.md`, "Immersive scene 1".
+
 ## Three.js (vendored)
 
 `vendor/three/` holds Three.js **r169** (`three@0.169.0`): `three.module.min.js` (687 KB, unmodified), `RoomEnvironment.js` (an official addon, with its import changed to the relative path) and the MIT `LICENSE`. Nothing is loaded from a CDN. To update: `npm install three@<version> --save-dev`, then copy `node_modules/three/build/three.module.min.js`, `node_modules/three/LICENSE` and `node_modules/three/examples/jsm/environments/RoomEnvironment.js` into `vendor/three/` and change the `'three'` import in `RoomEnvironment.js` to `'./three.module.min.js'`. The room is built from primitives and generated textures, so there are no model or texture licenses to track.
@@ -42,7 +46,7 @@ npx playwright install chromium   # first time only
 npm test
 ```
 
-Playwright + axe-core (WCAG 2.0/2.1/2.2 A and AA tags) scan every step in light and dark, plus checks that decorative SVGs are hidden, the monitor is named from the data and the provider's expression follows the outcome, hotspot, notes and read-aloud checks (with a mocked speechSynthesis), a keyboard-only run through every hotspot to mastery, a 320px reflow check and an iframe check. `tests/view3d.spec.js` covers the 3D view: axe in light and dark with a panel open, a hidden canvas, hotspots as buttons inside the scene, 2D/3D toggling, Pause animation, reduced motion, the WebGL-unavailable and context-lost fallbacks and 320px. The Playwright config starts Chromium with SwiftShader so headless runs have WebGL.
+Playwright + axe-core (WCAG 2.0/2.1/2.2 A and AA tags) scan every step in light and dark, plus checks that decorative SVGs are hidden, the monitor is named from the data and the provider's expression follows the outcome, hotspot, notes and read-aloud checks (with a mocked speechSynthesis), a keyboard-only run through every hotspot to mastery, a 320px reflow check and an iframe check. `tests/scene1.spec.js` covers the immersive scene (axe in light and dark on every state, keyboard-only walk-through, movement keys only with focus and switchable off, no keyboard trap, overlays never overlapping, drag alternatives, reduced motion, no-WebGL message, 320px, hand-off of notes). `tests/view3d.spec.js` covers the 3D view: axe in light and dark with a panel open, a hidden canvas, hotspots as buttons inside the scene, 2D/3D toggling, Pause animation, reduced motion, the WebGL-unavailable and context-lost fallbacks and 320px. The Playwright config starts Chromium with SwiftShader so headless runs have WebGL.
 
 ## Embed (for example in Open edX)
 

@@ -150,7 +150,8 @@ function showIntro({ focus = false } = {}) {
       <li>Get feedback on four criteria: Organization, Completeness, Prioritization and Clear request.</li>
       <li>Try again until all four are met. There is no time limit and no grade.</li>
     </ol>
-    <div class="btn-row"><button type="button" class="btn" data-act="start">Start</button></div>`,
+    <div class="btn-row"><button type="button" class="btn" data-act="start">Start</button></div>
+    <p class="step-note"><a href="scene1.html">Try the immersive version (beta)</a>: walk around the patient's room in first person. Scene 1 only, the bedside assessment.</p>`,
   // Don't steal focus on first load: the skip link and page start should come first.
   { focus, rawTitle: focus ? undefined : 'The 2 a.m. Call | SBAR practice' });
 }
@@ -443,4 +444,15 @@ function move(id, dir) {
 }
 
 initMotion();
-showIntro();
+// Coming back from the immersive scene 1: carry its notes over and open the Build step.
+let handoff = null;
+try {
+  if (new URLSearchParams(location.search).get('from') === 'scene1') {
+    const ids = JSON.parse(sessionStorage.getItem('sbar-scene1-notes') || '[]');
+    handoff = Array.isArray(ids) ? ids.filter((id) => hotspotById[id]) : [];
+  }
+} catch { handoff = []; }
+if (handoff) {
+  state.notes = handoff;
+  showBuild();
+} else showIntro();

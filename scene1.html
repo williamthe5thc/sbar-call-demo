@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The 2 a.m. Call: immersive scene 1 (beta)</title>
+  <meta name="description" content="An immersive, first-person version of the bedside assessment in The 2 a.m. Call. Personal portfolio demo with a fictional patient.">
+  <link rel="stylesheet" href="scene1.css">
+</head>
+<body class="s1">
+  <a class="skip" href="#scene-heading">Skip to the scene instructions</a>
+
+  <!-- The 3D view: a focusable region. The canvas inside is decorative (aria-hidden); everything it shows is also text. -->
+  <div id="view" class="view" tabindex="0" role="group"
+       aria-label="3D room view. Use arrow keys or W A S D to move, Q and E to turn, or use the Go to buttons."
+       aria-describedby="controls-help">
+    <div id="hotspots" class="hotspots" aria-hidden="true"></div>
+    <div id="fade" class="fade" aria-hidden="true"></div>
+  </div>
+  <p id="controls-help" class="sr">Arrow keys or W A S D move. Q and E, or Shift with the arrow keys, turn and look up or down. Drag with a mouse or finger to look around, or use the Turn and Look buttons. Press Tab to leave the 3D view. Movement keys can be turned off in Help and controls.</p>
+
+  <div id="ui" class="ui">
+    <header class="top">
+      <div class="title">
+        <h1>The 2 a.m. Call</h1>
+        <p class="sub">Scene 1: bedside (immersive beta)</p>
+      </div>
+      <div class="top-btns">
+        <button type="button" id="motion-toggle" class="btn sm" aria-pressed="false">Reduce motion</button>
+        <button type="button" id="anim-toggle" class="btn sm">Pause animation</button>
+        <button type="button" id="help-open" class="btn sm" aria-haspopup="dialog">Help<span class="xtra"> and controls</span></button>
+        <a id="exit" class="btn sm" href="index.html">Exit<span class="xtra"> to the standard version</span></a>
+      </div>
+    </header>
+
+    <div class="left">
+      <section class="strip" aria-labelledby="scene-heading">
+        <h2 id="scene-heading" tabindex="-1">Scene 1: the bedside assessment</h2>
+        <p id="caption">Look around the room. Select objects to examine them.</p>
+        <p id="keyhint" class="keyhint" hidden>3D view has focus: arrow keys or W A S D move, Q and E turn. Tab leaves the view.</p>
+      </section>
+
+      <section id="card" class="card" aria-labelledby="card-title" hidden>
+        <div class="card-head">
+          <h2 id="card-title">Findings</h2>
+          <button type="button" id="card-close" class="btn sm">Close<span class="xtra"> findings</span></button>
+        </div>
+        <div id="card-body" class="card-body" tabindex="0" role="region" aria-label="Findings details"></div>
+        <div class="card-foot"><button type="button" id="card-read" class="btn sm read-btn" hidden><span class="rl">Read aloud</span></button></div>
+      </section>
+    </div>
+
+    <div class="right">
+      <section id="notes" class="panel" aria-labelledby="notes-btn">
+        <h2 class="ph"><button type="button" id="notes-btn" class="ph-btn" aria-expanded="false" aria-controls="notes-body">Notes <span id="notes-count" class="count">(0)</span></button></h2>
+        <div id="notes-body" class="pb" hidden>
+          <div id="notes-scroll" class="scroll" tabindex="0" role="region" aria-label="Assessment notes">
+            <div id="notes-list"></div>
+          </div>
+          <div class="pb-tools">
+            <button type="button" id="notes-read" class="btn sm read-btn" hidden><span class="rl">Read aloud</span></button>
+            <button type="button" id="all-btn" class="btn sm" aria-expanded="false" aria-controls="all-findings">Show all findings</button>
+          </div>
+          <div id="all-findings" class="scroll all" tabindex="0" role="region" aria-label="All findings" hidden></div>
+        </div>
+      </section>
+
+      <section id="objects" class="panel" aria-labelledby="objects-btn">
+        <h2 class="ph"><button type="button" id="objects-btn" class="ph-btn" aria-expanded="true" aria-controls="objects-body">Objects nearby</button></h2>
+        <div id="objects-body" class="pb">
+          <p class="hint">Select one to walk over and examine it. Markers in the room show the ones in view.</p>
+          <ul id="objects-list" class="olist"></ul>
+        </div>
+      </section>
+    </div>
+
+    <nav id="goto" class="bl goto" aria-label="Go to">
+      <button type="button" id="goto-toggle" class="btn goto-toggle" aria-expanded="false" aria-controls="goto-list">Go to&hellip;</button>
+      <span class="goto-label" aria-hidden="true">Go to</span>
+      <ul id="goto-list" class="goto-list"></ul>
+    </nav>
+
+    <div class="br">
+      <div class="looks" role="group" aria-label="Look around">
+        <button type="button" class="btn sm" data-look="left">Turn left</button>
+        <button type="button" class="btn sm" data-look="right">Turn right</button>
+        <button type="button" class="btn sm" data-look="up">Look up</button>
+        <button type="button" class="btn sm" data-look="down">Look down</button>
+      </div>
+      <button type="button" id="ready" class="btn primary">I'm ready to call the provider</button>
+    </div>
+  </div>
+
+  <!-- Start screen -->
+  <div id="start" class="modal" role="dialog" aria-modal="true" aria-labelledby="start-title" aria-describedby="start-what">
+    <div class="sheet">
+      <h2 id="start-title" tabindex="-1">The 2 a.m. Call: scene 1</h2>
+      <p class="label">Personal portfolio demo. Fictional patient. Clinical content requires review by a nursing subject matter expert.</p>
+      <p id="start-what">You are the night nurse. Walk around a patient's room in first person and examine what is at the bedside. What you observe is saved in your notes. Then you call the provider. This is the first scene of an immersive version of the simulation (beta).</p>
+      <h3>Controls</h3>
+      <ul class="plain">
+        <li><strong>Look:</strong> drag with a mouse or finger, or use the Turn and Look buttons.</li>
+        <li><strong>Move:</strong> the Go to buttons, or arrow keys or W A S D while the 3D view has focus.</li>
+        <li><strong>Turn with the keyboard:</strong> Q and E, or Shift with the arrow keys.</li>
+        <li><strong>Examine:</strong> select an object in the room or in the Objects nearby list.</li>
+        <li><strong>Leave the 3D view:</strong> press Tab. Nothing traps the keyboard.</li>
+      </ul>
+      <fieldset class="opts">
+        <legend>Movement style</legend>
+        <label><input type="radio" name="style" value="jump" checked> Jump between spots (default)</label>
+        <label><input type="radio" name="style" value="smooth"> Smooth walking (optional)</label>
+        <p class="hint" id="smooth-note">Smooth walking is switched to short steps while Reduce motion is on.</p>
+      </fieldset>
+      <label class="opts chk"><input type="checkbox" id="keys-start" checked> Movement keys on</label>
+      <div class="actions">
+        <button type="button" id="start-btn" class="btn primary">Start</button>
+        <a class="btn" href="index.html">Use the standard version instead</a>
+      </div>
+      <p id="start-status" class="hint" role="status"></p>
+    </div>
+  </div>
+
+  <!-- Help and controls -->
+  <div id="help" class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+    <div class="sheet">
+      <h2 id="help-title" tabindex="-1">Help and controls</h2>
+      <ul class="plain">
+        <li><strong>Move:</strong> arrow keys or W A S D while the 3D view has focus. In jump style each press is one step; in smooth style hold the key.</li>
+        <li><strong>Turn:</strong> Q and E, or Shift with the left and right arrows. Shift with up and down looks up and down.</li>
+        <li><strong>Look:</strong> drag with a mouse or finger, or use the Turn left, Turn right, Look up and Look down buttons.</li>
+        <li><strong>Go to:</strong> the buttons at the bottom left take you to a spot in the room.</li>
+        <li><strong>Examine:</strong> select a marker in the room, click the object, or choose it in Objects nearby. Findings appear in a card and are added to Notes.</li>
+        <li><strong>Finish:</strong> choose "I'm ready to call the provider". You can finish at any time.</li>
+        <li><strong>Leave the 3D view:</strong> press Tab. Press Escape to close this window.</li>
+        <li><strong>The hallway door</strong> and the nurses' station beyond it are for the next scene and cannot be used yet.</li>
+      </ul>
+      <fieldset class="opts">
+        <legend>Movement style</legend>
+        <label><input type="radio" name="style2" value="jump" checked> Jump between spots (default)</label>
+        <label><input type="radio" name="style2" value="smooth"> Smooth walking (optional)</label>
+      </fieldset>
+      <label class="opts chk"><input type="checkbox" id="keys-help" checked> Movement keys on (turn off if single-key shortcuts get in the way of your speech input or assistive tech)</label>
+      <div class="actions"><button type="button" id="help-close" class="btn primary">Close help</button></div>
+    </div>
+  </div>
+
+  <!-- End of scene -->
+  <div id="end" class="modal" role="dialog" aria-modal="true" aria-labelledby="end-title" hidden>
+    <div class="sheet">
+      <h2 id="end-title" tabindex="-1">Scene 1 complete</h2>
+      <p>Next: walk to the nurses' station and make the call (coming next).</p>
+      <p id="end-none" class="hint" hidden>You did not examine anything. You can go back to the room, or carry on without notes.</p>
+      <h3>Your notes</h3>
+      <div id="end-notes" class="scroll end-notes" tabindex="0" role="region" aria-label="Your assessment notes"></div>
+      <div class="actions">
+        <a id="end-continue" class="btn primary" href="index.html?from=scene1">Continue in the standard version</a>
+        <button type="button" id="end-back" class="btn">Back to the room</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WebGL not available -->
+  <div id="nogl" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="nogl-title" hidden>
+    <div class="sheet">
+      <h2 id="nogl-title" tabindex="-1">The 3D room is not available here</h2>
+      <p>This browser or device could not start 3D graphics (WebGL), so the immersive version cannot run. Nothing is lost: the standard version has the same patient, the same findings and the same call.</p>
+      <div class="actions"><a class="btn primary" href="index.html">Open the standard version</a></div>
+    </div>
+  </div>
+
+  <div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+  <noscript><div class="nojs"><p>The immersive version needs JavaScript. <a href="index.html">Open the standard version</a>.</p></div></noscript>
+  <script type="module" src="scene1.js"></script>
+</body>
+</html>

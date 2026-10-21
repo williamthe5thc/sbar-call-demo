@@ -15,7 +15,7 @@ export function webglAvailable() {
 
 /* ---------- small builders ---------- */
 
-const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0, ...o });
+export const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0, ...o });
 const glass = (color, opacity = 0.35, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.15, metalness: 0, transparent: true, opacity, depthWrite: false, ...o });
 const shadowy = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
 const put = (parent, geo, mat, x = 0, y = 0, z = 0) => { const m = shadowy(new THREE.Mesh(geo, mat)); m.position.set(x, y, z); parent.add(m); return m; };
@@ -37,7 +37,7 @@ function tube(p, pts, r, mat) {
 }
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-function canvasTex(w, h, draw) {
+export function canvasTex(w, h, draw) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   const ctx = c.getContext('2d');
@@ -49,7 +49,7 @@ function canvasTex(w, h, draw) {
 }
 
 // Small deterministic random numbers so the sky looks the same every time.
-function rng(seed) { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; }
+export function rng(seed) { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; }
 
 /* ---------- procedural textures ---------- */
 
@@ -159,7 +159,8 @@ function makeMonitor(data) {
 
 /* ---------- the room ---------- */
 
-function buildRoom(scene, data) {
+// opts.noShell: skip the floor, walls and ceiling (the immersive scene builds its own, with richer textures).
+export function buildRoom(scene, data, opts = {}) {
   const parts = {};
   const mWall = std(0xffffff, { map: wallTexture().tex, roughness: 0.95 });
   const mTrim = std(0xcfd8e6, { roughness: 0.7 });
@@ -169,24 +170,26 @@ function buildRoom(scene, data) {
   const mSheet = std(0xc7d3e2, { roughness: 0.92 });
   const mSkin = std(0xc58f6c, { roughness: 0.6 });
 
-  // Floor
-  const ft = floorTexture().tex; ft.wrapS = ft.wrapT = THREE.RepeatWrapping; ft.repeat.set(5, 4);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(9, 8), std(0xffffff, { map: ft, roughness: 0.38, metalness: 0.05 }));
-  floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, 0.8); floor.receiveShadow = true; scene.add(floor);
-
-  // Walls, with an opening for the window
   const WZ = -1.45, H = 2.8;
-  const wallBox = (w, h, x, y) => box(scene, w, h, 0.1, mWall, x, y, WZ - 0.05);
-  wallBox(9, 1.0, 0, 0.5);                      // below the window
-  wallBox(9, H - 2.2, 0, 2.2 + (H - 2.2) / 2);  // above the window
-  wallBox(5.4, 1.2, -1.8, 1.6);                 // left of the window (x -4.5 to 0.9)
-  wallBox(2.4, 1.2, 3.3, 1.6);                  // right of the window (x 2.1 to 4.5)
-  box(scene, 0.1, H, 8, mWall, -3.6, H / 2, 0.8);
-  box(scene, 0.1, H, 8, mWall, 3.6, H / 2, 0.8);
-  box(scene, 9, 0.12, 0.04, mTrim, 0, 0.06, WZ + 0.02); // baseboard
-  box(scene, 9, 0.05, 0.05, mTrim, 0, 0.98, WZ + 0.03); // handrail
-  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(9, 8), std(0x2a3446, { roughness: 1 }));
-  ceiling.rotation.x = Math.PI / 2; ceiling.position.set(0, H, 0.8); scene.add(ceiling);
+  if (!opts.noShell) {
+    // Floor
+    const ft = floorTexture().tex; ft.wrapS = ft.wrapT = THREE.RepeatWrapping; ft.repeat.set(5, 4);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(9, 8), std(0xffffff, { map: ft, roughness: 0.38, metalness: 0.05 }));
+    floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, 0.8); floor.receiveShadow = true; scene.add(floor);
+
+    // Walls, with an opening for the window
+    const wallBox = (w, h, x, y) => box(scene, w, h, 0.1, mWall, x, y, WZ - 0.05);
+    wallBox(9, 1.0, 0, 0.5);                      // below the window
+    wallBox(9, H - 2.2, 0, 2.2 + (H - 2.2) / 2);  // above the window
+    wallBox(5.4, 1.2, -1.8, 1.6);                 // left of the window (x -4.5 to 0.9)
+    wallBox(2.4, 1.2, 3.3, 1.6);                  // right of the window (x 2.1 to 4.5)
+    box(scene, 0.1, H, 8, mWall, -3.6, H / 2, 0.8);
+    box(scene, 0.1, H, 8, mWall, 3.6, H / 2, 0.8);
+    box(scene, 9, 0.12, 0.04, mTrim, 0, 0.06, WZ + 0.02); // baseboard
+    box(scene, 9, 0.05, 0.05, mTrim, 0, 0.98, WZ + 0.03); // handrail
+    const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(9, 8), std(0x2a3446, { roughness: 1 }));
+    ceiling.rotation.x = Math.PI / 2; ceiling.position.set(0, H, 0.8); scene.add(ceiling);
+  }
 
   // Window: night sky, city lights, moon
   const sky = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: skyTexture().tex, fog: false }));
@@ -302,6 +305,7 @@ function buildRoom(scene, data) {
   }
   SH.computeVertexNormals();
   const sheet = shadowy(new THREE.Mesh(SH, mSheet)); bed.add(sheet);
+  parts.sheet = sheet;
 
   // IV pole, pump and bag (world space, to the left)
   const iv = new THREE.Group(); iv.position.set(-1.55, 0, -0.1); scene.add(iv);
@@ -363,7 +367,7 @@ function buildRoom(scene, data) {
 
   // Overbed table with the chart
   const tb = new THREE.Group(); tb.position.set(1.52, 0, -0.1); scene.add(tb);
-  box(tb, 0.9, 0.04, 0.45, std(0xc9b79a, { roughness: 0.45 }), 0, 0.95, 0);
+  parts.tableTop = box(tb, 0.9, 0.04, 0.45, std(0xc9b79a, { roughness: 0.45 }), 0, 0.95, 0);
   box(tb, 0.9, 0.012, 0.47, mMetal, 0, 0.925, 0);
   cyl(tb, 0.025, 0.025, 0.9, mMetal, 0.3, 0.47, 0);
   box(tb, 0.08, 0.04, 0.7, mMetal, 0.3, 0.04, 0);
