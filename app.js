@@ -3,6 +3,8 @@
 import { scenario } from './scenario.js';
 import { introScene, monitorFigure, nurseStationScene, providerScene, sunriseScene, assessSvg, MOODS, moodFor } from './illustrations.js';
 import { supported as speechSupported, toggleReading, stopReading } from './readaloud.js';
+import { initMotion, transition } from './motion.js';
+import { mountAssessView, unmountAssessView, selectInView } from './assessview.js';
 
 const app = document.getElementById('app');
 const live = document.getElementById('live');
@@ -92,14 +94,20 @@ function announce(msg) {
 }
 
 // Each step swaps the whole view, updates the page title, and moves focus to the
-// step's heading so keyboard and screen reader users know the page changed.
-function go(title, html, { focus = true, wide = false } = {}) {
+// step's heading so keyboard and screen reader users know the page changed. The swap
+// runs inside a short View Transition where supported (see motion.js); focus moves
+// as part of the swap, so the heading has focus by the time the new step shows.
+function go(title, html, { focus = true, wide = false, after, rawTitle } = {}) {
   stopReading(); // speech never carries over to another step
-  document.getElementById('main').classList.toggle('wide', wide);
-  app.innerHTML = html;
-  document.title = `${title} | The 2 a.m. Call`;
-  if (focus) app.querySelector('[data-step-heading]').focus();
-  else window.scrollTo(0, 0);
+  transition(() => {
+    unmountAssessView();
+    document.getElementById('main').classList.toggle('wide', wide);
+    app.innerHTML = html;
+    document.title = rawTitle || `${title} | The 2 a.m. Call`;
+    if (after) after();
+    if (focus) app.querySelector('[data-step-heading]').focus();
+    else window.scrollTo(0, 0);
+  });
 }
 
 const tag = '<span class="tag">PLACEHOLDER</span>';
@@ -126,7 +134,7 @@ function chartHtml(level = 3) {
 
 /* ---------- Steps ---------- */
 
-function showIntro() {
+function showIntro({ focus = false } = {}) {
   go('Welcome', `
     <h2 tabindex="-1" data-step-heading>Welcome</h2>
     ${introScene(scenario.chart)}
@@ -142,9 +150,9 @@ function showIntro() {
       <li>Get feedback on four criteria: Organization, Completeness, Prioritization and Clear request.</li>
       <li>Try again until all four are met. There is no time limit and no grade.</li>
     </ol>
-    <div class="btn-row"><button type="button" class="btn" data-act="start">Start</button></div>`, { focus: false });
+    <div class="btn-row"><button type="button" class="btn" data-act="start">Start</button></div>`,
   // Don't steal focus on first load: the skip link and page start should come first.
-  document.title = 'The 2 a.m. Call | SBAR practice';
+  { focus, rawTitle: focus ? undefined : 'The 2 a.m. Call | SBAR practice' });
 }
 
 /* ---------- Read aloud and sentence markup ---------- */
@@ -196,11 +204,20 @@ function showAssess() {
         <div class="assess-scene">
           <div class="scene scene-assess scene-frame">
             ${assessSvg(scenario.chart, scenario.assessment)}
+            <div class="gl" aria-hidden="true"></div>
             <ul class="hotspots" role="list" aria-label="Things to examine at the bedside">
               ${scenario.assessment.map((h) => `
               <li style="--x:${h.x}%;--y:${h.y}%"><button type="button" class="hs${state.notes.includes(h.id) ? ' seen' : ''}" data-act="hotspot" data-id="${h.id}" aria-controls="finding-panel"><span class="ic" aria-hidden="true"></span><span>${esc(h.label)}</span></button></li>`).join('')}
             </ul>
           </div>
+          <div class="view-bar" role="group" aria-label="Scene view options">
+            <button type="button" class="small-btn" data-view-act="toggle" aria-pressed="false">3D view</button>
+            <button type="button" class="small-btn" data-view-act="anim" hidden>Pause animation</button>
+            <button type="button" class="small-btn" data-view-act="back" aria-disabled="true" hidden>Back to bedside view</button>
+            <button type="button" class="small-btn" data-view-act="left" hidden>Look left</button>
+            <button type="button" class="small-btn" data-view-act="right" hidden>Look right</button>
+          </div>
+          <p id="view-note" class="step-note" role="status" hidden></p>
         </div>
         <section id="finding-panel" class="panel" aria-live="off" aria-labelledby="panel-title">${emptyPanelHtml}</section>
       </div>
@@ -218,7 +235,10 @@ function showAssess() {
       </div>
     </div>
     <div class="btn-row"><button type="button" class="btn" data-act="build">Continue to build the call</button></div>
-    <p id="none-note" class="step-note"${state.notes.length ? ' hidden' : ''}>You have not opened anything yet. You can still continue, but the notes help when you build the call.</p>`, { wide: true });
+    <p id="none-note" class="step-note"${state.notes.length ? ' hidden' : ''}>You have not opened anything yet. You can still continue, but the notes help when you build the call.</p>`, {
+    wide: true,
+    after: () => mountAssessView(app, { hotspots: scenario.assessment, chart: scenario.chart }),
+  });
   state.active = null;
 }
 
@@ -235,6 +255,7 @@ function openHotspot(btn) {
     if (b === btn) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
   });
   btn.classList.add('seen');
+  selectInView(h.id); // in the 3D view the camera moves to the object; focus stays on the button
   document.getElementById('notes-list').innerHTML = notesListHtml();
   const none = document.getElementById('none-note');
   if (none) none.hidden = true;
@@ -329,10 +350,10 @@ function showFeedback() {
       </div>
     </div>
     <h3>Your criteria</h3>
-    <ul class="criteria">${r.results.map((c) => {
+    <ul class="criteria">${r.results.map((c, i) => {
       const def = names[c.id];
       const tips = c.met ? [def.metTip] : c.tips;
-      return `<li><h4>${def.name}
+      return `<li style="--i:${i}"><h4>${def.name}
         <span class="badge ${c.met ? 'met' : 'notyet'}"><span aria-hidden="true">${c.met ? '✓' : '✗'}</span> ${c.met ? 'Met' : 'Not yet'}</span></h4>
         <p class="step-note">${esc(def.description)}</p>
         ${tips.map((t) => `<p>${esc(t)}</p>`).join('')}</li>`;
@@ -385,8 +406,7 @@ app.addEventListener('click', (e) => {
     state.attempts = [];
     state.last = null;
     state.notes = [];
-    showIntro();
-    app.querySelector('[data-step-heading]').focus();
+    showIntro({ focus: true });
   } else if (act === 'up' || act === 'down') move(btn.dataset.id, act);
 });
 
@@ -422,4 +442,5 @@ function move(id, dir) {
   announce(`Moved ${dir}. Now position ${j + 1} of ${list.length} in ${secName(key)}.`);
 }
 
+initMotion();
 showIntro();

@@ -4,11 +4,26 @@ An accessible, competency-based SBAR handoff simulation. A learner examines a fi
 
 > Personal portfolio demo. Fictional patient. Clinical content requires review by a nursing subject matter expert.
 
-All clinical values are placeholders. Plain HTML, CSS and vanilla JS (ES modules). No build step, no runtime dependencies, no CDNs, no audio.
+All clinical values are placeholders. Plain HTML, CSS and vanilla JS (ES modules). No build step, no CDNs, no audio. The one runtime library is a vendored copy of Three.js, used only by the optional 3D view.
 
 ## Flow
 
-Intro, Assess the patient, Build the call, Feedback, Mastery. On the assess step the learner selects objects in a bedside scene (monitor, drain, urine bag, pumps, dressing, chart and more). Each finding they open is added to "Your assessment notes", which come back on the build step.
+Intro, Assess the patient, Build the call, Feedback, Mastery. On the assess step the learner selects objects in a bedside scene (monitor, drain, urine bag, pumps, dressing, chart and more), in 3D or 2D. Each finding they open is added to "Your assessment notes", which come back on the build step.
+
+## 3D and 2D views, and motion
+
+The assess step opens in a 3D bedside room when the browser supports WebGL, and in 2D otherwise. Under the scene:
+
+- **3D view** (toggle button): switches between the 3D room and the 2D illustration. The choice is remembered in this browser.
+- **Pause animation / Play animation**: stops or starts the idle animation (breathing, monitor trace, curtain).
+- **Back to bedside view**, **Look left**, **Look right**: move the camera. Selecting an object also moves the camera to it.
+- **Reduce motion** (top of the page): turns off transitions and animations and makes camera moves instant. It starts on if your system asks for reduced motion.
+
+The 3D canvas is decorative; every finding is still text on the page. See `DESIGN_NOTES.md`.
+
+## Three.js (vendored)
+
+`vendor/three/` holds Three.js **r169** (`three@0.169.0`): `three.module.min.js` (687 KB, unmodified), `RoomEnvironment.js` (an official addon, with its import changed to the relative path) and the MIT `LICENSE`. Nothing is loaded from a CDN. To update: `npm install three@<version> --save-dev`, then copy `node_modules/three/build/three.module.min.js`, `node_modules/three/LICENSE` and `node_modules/three/examples/jsm/environments/RoomEnvironment.js` into `vendor/three/` and change the `'three'` import in `RoomEnvironment.js` to `'./three.module.min.js'`. The room is built from primitives and generated textures, so there are no model or texture licenses to track.
 
 ## Run locally
 
@@ -27,7 +42,7 @@ npx playwright install chromium   # first time only
 npm test
 ```
 
-Playwright + axe-core (WCAG 2.0/2.1/2.2 A and AA tags) scan every step in light and dark, plus checks that decorative SVGs are hidden, the monitor is named from the data and the provider's expression follows the outcome, hotspot, notes and read-aloud checks (with a mocked speechSynthesis), a keyboard-only run through every hotspot to mastery, a 320px reflow check and an iframe check.
+Playwright + axe-core (WCAG 2.0/2.1/2.2 A and AA tags) scan every step in light and dark, plus checks that decorative SVGs are hidden, the monitor is named from the data and the provider's expression follows the outcome, hotspot, notes and read-aloud checks (with a mocked speechSynthesis), a keyboard-only run through every hotspot to mastery, a 320px reflow check and an iframe check. `tests/view3d.spec.js` covers the 3D view: axe in light and dark with a panel open, a hidden canvas, hotspots as buttons inside the scene, 2D/3D toggling, Pause animation, reduced motion, the WebGL-unavailable and context-lost fallbacks and 320px. The Playwright config starts Chromium with SwiftShader so headless runs have WebGL.
 
 ## Embed (for example in Open edX)
 
@@ -53,11 +68,12 @@ Assessment format (one entry per object, listed left to right, which is also the
 { id: 'drain', label: 'Surgical drain',   // visible and accessible name
   x: 51.3, y: 90.4,                       // label position, percent of the 8:5 scene
   tx: 51.3, ty: 74.4,                     // optional: the object, percent (leader line)
+  pos3d: [0.3, 0.36, 0.02],               // 3D view: where the object is in the room, metres [x, y, z]
   panel: 'monitor' | 'chart',             // optional: extra content in the panel
   findings: ['Observed sentence.', '...'] } // what is seen, never what it means
 ```
 
-`app.js` needs no changes, but a new scene needs new artwork: `assessSvg()` in `illustrations.js` is hand-drawn for this patient, and `x`/`y` must match it. Read aloud is in `readaloud.js`. Scene artwork is in `illustrations.js` (hand-built SVG functions; the monitor reads the vitals from the scenario).
+`app.js` needs no changes, but a new scene needs new artwork: `assessSvg()` in `illustrations.js` and the room in `scene3d.js` are hand-built for this patient, and `x`/`y` and `pos3d` must match them. Read aloud is in `readaloud.js`. Scene artwork is in `illustrations.js` (hand-built SVG functions; the monitor reads the vitals from the scenario).
 
 ## Credits and sources
 

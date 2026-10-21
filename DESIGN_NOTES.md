@@ -22,8 +22,8 @@ The reply shows the consequence of the call the way a real provider would. All f
 ## Why checkboxes and move buttons, not drag-and-drop
 Drag-and-drop is hard for keyboard, switch and screen-reader users, and WCAG 2.2 requires a non-dragging alternative anyway. Native checkboxes plus "Move up / Move down" buttons work with every input method. Buttons have names like "Move up: <statement>", keep focus on the moved item, and announce the new position.
 
-## Why 2D first, 3D later
-A 2D page is accessible, light, works in an iframe and needs no GPU. The flat 2D illustrations stand in for it for now; a 3D night-station scene could be added later as an optional, decorative layer that does not carry any required information.
+## Why 2D first, then 3D as an option
+A 2D page is accessible, light, works in an iframe and needs no GPU, so it came first and is still the base: the SVG scene and the 3D view show the same objects, the same hotspots and the same findings. The 3D bedside exam (`scene3d.js`) is an optional layer on top, described below. The 2D view stays one button away and is the automatic fallback.
 
 ## Why these illustrations, and how they stay accessible
 The first version was all text, so each step now has a hand-built inline SVG scene (`illustrations.js`, with `room.js` for the bedside room and `people.js` for the characters; no image files, libraries or canvas). The look is a semi-realistic night room: the warm reading lamp and the cool monitor glow are radial gradients, shadows are blurred shapes, metal and plastic have highlight gradients, and the characters are shaded faces with hair, scrubs, a coat, stethoscope and handset. SVG keeps this light (about 60 KB for the bedside scene, well under the 120 KB budget, with shared gradients, filters and repeated shapes in one `<defs>` per SVG), sharp at any zoom, and themeable, and the important numbers stay real text. The scenes are night scenes in light and dark mode so the vitals stay high contrast. The welcome page reuses the bedside room without hotspots, and the mastery page shows the same room at sunrise with the patient resting.
@@ -57,7 +57,7 @@ Every step has an h2 with `tabindex="-1"`. When the step changes, code moves foc
 Use an iframe with a `title` attribute (see README). All paths are relative, so it works at a subpath such as /sbar-call-demo/. State is in memory only, so a reload starts over.
 
 ## What's next
-Nursing SME review; learner testing; optional 3D ambient layer; xAPI statements for attempts and mastery.
+Nursing SME review; learner testing; xAPI statements for attempts and mastery.
 
 ## TODO
 - [ ] Nursing SME review of every clinical value, note, statement and provider reply (all are placeholders).
@@ -73,3 +73,28 @@ pressure have changed") instead of quoting the statement. Quoting it would let a
 learner copy the answer key without reading the chart, and the skill being
 practiced is choosing what matters. Tips about statements the learner already
 chose can quote them, because those are the learner's own words.
+
+## The 3D view: why the canvas carries no information
+The bedside exam can be shown in 3D (Three.js, built only from primitives and procedural textures, so there are no model or texture licenses). The `<canvas>` is `aria-hidden="true"`, holds nothing focusable and says nothing that the page does not also say in HTML. A screen reader user, a keyboard user and a learner who turns 3D off get exactly the same findings, notes, "Show all findings as a list" and read aloud as before. The pump screens show only a word and a bar, never a number; the monitor texture is drawn from the same vitals data as the 2D monitor and the HTML table, so the two cannot disagree. If the canvas disappeared, nothing would be lost, which is the test for decorative content.
+
+- View toggle: a real button, always labelled "3D view", with `aria-pressed` for the state (the label does not change, so assistive tech reads one consistent control). 2D view is the existing SVG. The choice is kept in `localStorage` (inside try/catch; the page works without it).
+- Default is 3D only when WebGL works. If WebGL is missing, the module fails to load or the context is lost, the page switches to 2D and shows a short visible note in a `role="status"` line. The fallback is not saved as the learner's choice.
+- The 3D code is loaded with a dynamic `import()` only when needed, so 2D users and the fallback never download it.
+- Camera: a fixed bedside view. Activating a hotspot moves the camera (about 0.8 s, eased) to a close view; "Back to bedside view" returns, and "Look left / Look right" turn the view in two small steps. There is deliberately no drag-to-look, so nothing needs a dragging gesture (2.5.7). The scene never listens for keyboard events, only our own buttons do (2.1.2: no keyboard trap).
+- Performance: render on demand (only when the camera moves, the animation runs or the window resizes), at most 30 fps for the idle animation, paused when the tab is hidden or the canvas is off screen, pixel ratio capped at 1.5, shadows drawn once.
+
+## How hotspots follow 3D objects
+The hotspots are the same `<button>`s as in 2D, in the same DOM (Tab) order, with the same labels, `aria-controls`, `aria-current` and announcements. Each item in `scenario.js` has `pos3d: [x, y, z]` (metres) next to its 2D `x`/`y`. After each rendered frame `scene3d.js` projects every anchor to the screen and writes the result into the button's wrapper (`--x`, `--y`), so the button sits just above its object.
+
+- Off screen or behind the camera during a move: the button is clamped to the nearest edge, so it stays reachable. Labels that would overlap are moved apart so none covers another, and a focused hotspot gets the highest z-index, so nothing hides it (2.4.11). The view controls sit below the scene, not over it.
+- Focus never moves the camera: Tab only moves focus. Enter, Space or a click opens the findings and moves the camera, and focus stays on the button.
+- Below about 640 px of container width the buttons keep the plain list layout and the canvas shrinks to a small view above it, so there is no horizontal scroll at 320 px.
+- Tab order follows the data order, which is roughly left to right in the 3D room too. If a 3D label sits a little away from its object after de-overlapping, the label text still names it.
+
+## Accessible animation
+- 2.2.2 (Pause, Stop, Hide): the idle animation (breathing, the ECG trace, the curtain sway) runs longer than 5 seconds, so there is a visible "Pause animation" / "Play animation" button (the label changes with the state). With the animation paused, nothing is drawn until something changes.
+- 2.3.1 (Three Flashes): nothing flashes. The ECG trace scrolls smoothly and no light changes quickly. The older monitor dot and call signal blink at most three times.
+- 2.3.3 (Animation from Interactions, AAA, followed as good practice): the "Reduce motion" button in the header (a real button with `aria-pressed`, saved in `localStorage`) turns off step transitions, entrance animations and idle animation, and makes camera moves instant cuts. It starts on when the system asks for reduced motion (`prefers-reduced-motion`) and the learner can still change it. The Play button remains, so someone who wants the idle animation can opt in.
+- Step transitions use the View Transitions API where it exists (cross-fade plus a small slide, about 250 ms) and fall back to an instant swap. The step changes first and focus moves to the new heading as part of the swap, so there is no gap where focus sits on content that is going away.
+- Entrances (the feedback criteria fade in one after another, the provider's speech bubble pops in) are under one second in total. The content is real HTML from the first frame; the animation only changes how it appears.
+- No information by motion alone: every state that is animated is also text (the provider's mood has a words line, a camera move is also the findings panel changing, and "Met / Not yet" are words). Animations never delay interaction: the next step's heading is focused straight away and nothing waits for an animation to end.

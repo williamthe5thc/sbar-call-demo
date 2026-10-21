@@ -73,7 +73,7 @@ a { color: var(--primary); }
 }
 
 .site-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 0; }
-.header-inner { display: flex; align-items: center; gap: 1rem; }
+.header-inner { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
 .header-art { color: var(--primary); flex: none; }
 .tagline { margin: .25rem 0 0; color: var(--muted); }
 .site-footer { border-top: 1px solid var(--border); margin-top: 2rem; padding: 1rem 0 2rem; color: var(--muted); }
@@ -183,10 +183,33 @@ figure.scene { margin: 1rem 0; }
 @media (max-width: 30rem) {
 }
 
+/* Motion is off when the learner pressed "Reduce motion" (html[data-motion="reduce"]) or,
+   until they choose, when their system asks for it. Nothing here carries meaning on its own. */
+html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-motion="reduce"] *::after {
+  transition: none !important; animation: none !important; scroll-behavior: auto !important;
+}
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  html:not([data-motion="allow"]) *, html:not([data-motion="allow"]) *::before, html:not([data-motion="allow"]) *::after {
+    transition: none !important; animation: none !important; scroll-behavior: auto !important;
+  }
 }
 
+/* ---------- Step transitions and entrances (short, never block reading) ---------- */
+#app { view-transition-name: step; }
+::view-transition-group(step) { animation-duration: 0s; }
+::view-transition-old(step) { animation: 140ms ease-in both vt-out; }
+::view-transition-new(step) { animation: 260ms ease-out both vt-in; }
+@keyframes vt-out { to { opacity: 0; transform: translateX(-14px); } }
+@keyframes vt-in { from { opacity: 0; transform: translateX(18px); } }
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+.criteria li { animation: rise .32s ease-out both; animation-delay: calc(var(--i, 0) * 80ms); }
+.bubble { animation: pop .36s ease-out .15s both; }
+
+.motion-btn { margin-left: auto; min-height: 44px; min-width: 44px; padding: .25rem .9rem; }
+.motion-btn[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.motion-btn[aria-pressed="true"]::before { content: "\2713\00a0"; content: "\2713\00a0" / ""; } /* the check is not part of the name */
 
 /* ---------- Assess the patient ----------
    The scene keeps a fixed 8:5 aspect ratio, so hotspot percentages always land on
@@ -202,6 +225,19 @@ figure.scene { margin: 1rem 0; }
 .scene-assess > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hotspots { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; }
 .hotspots li { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%); }
+.hotspots li:focus-within { z-index: 3; } /* a focused hotspot is never hidden behind another */
+
+/* 3D view: the canvas fills the frame; the SVG is kept for the 2D view. */
+.gl { position: absolute; inset: 0; }
+.gl canvas { display: block; width: 100%; height: 100%; }
+.scene-assess[data-view="2d"] .gl { display: none; }
+.scene-assess[data-view="3d"] > svg { display: none; }
+.view-bar { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0 0; }
+.view-bar .small-btn { min-height: 44px; padding: .25rem .9rem; }
+.view-bar .small-btn[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.view-bar .small-btn[aria-pressed="true"]::before { content: "\2713\00a0"; content: "\2713\00a0" / ""; }
+.view-bar [hidden] { display: none; }
+#view-note { margin: .5rem 0 0; }
 
 .hs {
   display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; cursor: pointer;
@@ -221,6 +257,7 @@ figure.scene { margin: 1rem 0; }
 @container scene (max-width: 639px) {
   .scene.scene-assess { aspect-ratio: auto; overflow: hidden; }
   .scene-assess > svg { position: static; height: auto; max-height: 11rem; }
+  .gl { position: relative; height: 11rem; }
   .scene-assess .leaders { display: none; }
   .hotspots { position: static; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .5rem; padding: .75rem; background: var(--surface); }
   .hotspots li { position: static; transform: none; }

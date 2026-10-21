@@ -16,9 +16,10 @@
 //   id, label      -> the hotspot's id and its visible (and accessible) name
 //   x, y           -> where the label sits, in percent of the scene (left, top)
 //   tx, ty         -> optional: the object itself, in percent; a leader line is drawn to it
+//   pos3d          -> [x, y, z] in metres: where the object is in the 3D room (scene3d.js). The hotspot button follows it.
 //   findings       -> short sentences that say what is observed, never what it means
 //   panel          -> optional: 'monitor' or 'chart' also shows the monitor graphic or the chart tables
-// List them left to right: this is also the keyboard Tab order. A 3D scene could reuse this data.
+// List them left to right: this is also the keyboard Tab order. The 3D scene reuses this data.
 //
 // EVERY clinical value below is a PLACEHOLDER and needs nursing SME review.
 
@@ -62,25 +63,25 @@ export const scenario = {
   },
 
   assessment: [
-    { id: 'ivpump', label: 'IV pump', x: 8.5, y: 44, tx: 16, ty: 48.5,
+    { id: 'ivpump', label: 'IV pump', x: 8.5, y: 44, tx: 16, ty: 48.5, pos3d: [-1.42, 1.32, -0.02],
       findings: ['The IV pump is running at the maintenance rate.', 'No alarms are showing.', 'The fluid bag is about half full.'] },
-    { id: 'pca', label: 'PCA pump', x: 9, y: 90, tx: 16.3, ty: 76.8,
+    { id: 'pca', label: 'PCA pump', x: 9, y: 90, tx: 16.3, ty: 76.8, pos3d: [-1.12, 0.92, 0.4],
       findings: ['The PCA pump is on and working.', 'No alarms are showing.', 'The handset is within his reach.'] },
-    { id: 'skin', label: "Patient's skin", x: 28.5, y: 53.6, tx: 32.8, ty: 62.8,
+    { id: 'skin', label: "Patient's skin", x: 28.5, y: 53.6, tx: 32.8, ty: 62.8, pos3d: [-0.4, 0.8, -0.24],
       findings: ['His skin feels cool to the touch.', 'His skin is damp.'] },
-    { id: 'monitor', label: 'Monitor', x: 41.3, y: 8, tx: 41.3, ty: 13, panel: 'monitor',
+    { id: 'monitor', label: 'Monitor', x: 41.3, y: 8, tx: 41.3, ty: 13, pos3d: [0.15, 1.62, -1.15], panel: 'monitor',
       findings: [] /* filled from chart.vitals below */ },
-    { id: 'ivsite', label: 'IV site', x: 41.9, y: 41.6, tx: 42, ty: 69.4,
+    { id: 'ivsite', label: 'IV site', x: 41.9, y: 41.6, tx: 42, ty: 69.4, pos3d: [0.0, 0.74, -0.2],
       findings: ['The IV site in his left arm is clean and dry.', 'There is no redness or swelling around it.'] },
-    { id: 'drain', label: 'Surgical drain', x: 51.3, y: 90.4, tx: 51.3, ty: 74.4,
+    { id: 'drain', label: 'Surgical drain', x: 51.3, y: 90.4, tx: 51.3, ty: 74.4, pos3d: [0.3, 0.36, 0.02],
       findings: ['The drain bulb holds 120 mL since the last check.', 'The fluid in the bulb is red.', 'The tubing is not kinked.', 'The check at 12:00 a.m. was 70 mL.'] },
-    { id: 'dressing', label: 'Dressing', x: 55, y: 53.6, tx: 55.5, ty: 60.4,
+    { id: 'dressing', label: 'Dressing', x: 55, y: 53.6, tx: 55.5, ty: 60.4, pos3d: [-0.14, 0.87, -0.55],
       findings: ['The dressing over the incision is dry and intact.', 'The tape edges are sealed.', 'No drainage shows on the gauze.'] },
-    { id: 'abdomen', label: 'Abdomen', x: 70, y: 41.6, tx: 61.3, ty: 61,
+    { id: 'abdomen', label: 'Abdomen', x: 70, y: 41.6, tx: 61.3, ty: 61, pos3d: [0.2, 0.84, -0.4],
       findings: ['The abdomen looks rounded and feels firm when touched.', 'He tenses when you press near the incision.', 'He rates his pain 8 out of 10.'] },
-    { id: 'urine', label: 'Urine bag', x: 73.8, y: 94, tx: 73.5, ty: 89.6,
+    { id: 'urine', label: 'Urine bag', x: 73.8, y: 94, tx: 73.5, ty: 89.6, pos3d: [0.88, 0.33, 0.0],
       findings: ['The collection bag holds 20 mL from the last hour.', 'The urine is dark yellow.', 'The tubing is not kinked.'] },
-    { id: 'chart', label: 'Chart', x: 92.3, y: 53.6, tx: 91.3, ty: 57.6, panel: 'chart',
+    { id: 'chart', label: 'Chart', x: 92.3, y: 53.6, tx: 91.3, ty: 57.6, pos3d: [1.45, 1.0, -0.08], panel: 'chart',
       findings: ['The chart is open to the vital signs trend, nursing notes, current medications and labs.'] },
   ],
 

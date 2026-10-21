@@ -3,7 +3,11 @@ import AxeBuilder from '@axe-core/playwright';
 import { scenario } from '../scenario.js';
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'];
-const scan = async (page) => {
+const scan = async (page, heading) => {
+  // Steps swap inside a short View Transition and some content fades in, so wait for
+  // the new step's heading and for animations to finish before scanning.
+  if (heading) await expect(page.getByRole('heading', { name: heading })).toBeFocused();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
   const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
   expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(' | ')}`)).toEqual([]);
 };
@@ -36,7 +40,7 @@ for (const scheme of ['light', 'dark']) {
       await page.goto('/index.html');
       await scan(page); // intro
       await page.getByRole('button', { name: 'Start' }).click();
-      await scan(page); // assess, no panel
+      await scan(page, 'Assess the patient'); // assess, no panel
       await page.getByRole('button', { name: 'Surgical drain' }).click();
       await scan(page); // assess, panel open
       await page.getByRole('button', { name: 'Monitor' }).click();
@@ -46,12 +50,13 @@ for (const scheme of ['light', 'dark']) {
       await page.getByText('Show all findings as a list').click();
       await scan(page); // all findings open
       await page.getByRole('button', { name: 'Continue to build the call' }).click();
+      await expect(page.getByRole('heading', { name: 'Build the call' })).toBeFocused();
       await page.getByText('View chart').click();
       await pick(page, ['s4', 's1', 'r4']); // some picks so the ordered list renders
       await scan(page); // build
       await page.getByRole('button', { name: 'Make the call' }).click();
       await expect(page.getByRole('heading', { name: 'Feedback' })).toBeFocused();
-      await scan(page); // feedback after failing attempt
+      await scan(page, 'Feedback'); // feedback after failing attempt
       await page.getByRole('button', { name: 'Try again' }).click();
       await page.locator('#cb-s4').uncheck();
       await page.locator('#cb-r4').uncheck();
@@ -95,6 +100,8 @@ test('keyboard only: complete to mastery', async ({ page }) => {
   };
   await tabTo(page.getByRole('button', { name: 'Start' }));
   await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Assess the patient' })).toBeFocused(); // the swap runs in a view transition
+  await expect(page.locator('.scene-assess')).toHaveAttribute('data-view', '3d', { timeout: 30000 }); // software WebGL can take a few seconds to start
   // Tab order is the data order; Enter opens each hotspot and the notes grow.
   await page.keyboard.press('Tab');
   for (let i = 0; i < HS.length; i++) {
@@ -106,6 +113,7 @@ test('keyboard only: complete to mastery', async ({ page }) => {
     await expect(page.locator('#live')).toContainText('Added to your notes');
     if (i < HS.length - 1) await page.keyboard.press('Tab');
   }
+  await expect(page.locator('.scene-assess')).toHaveAttribute('data-view', '3d'); // this run used the 3D view
   await tabTo(page.getByRole('button', { name: 'Continue to build the call' }));
   await page.keyboard.press('Enter');
   await expect(page.locator('#notes-list-build li')).toHaveCount(HS.length);
@@ -120,7 +128,7 @@ test('keyboard only: complete to mastery', async ({ page }) => {
   await tabTo(page.getByRole('button', { name: 'See your evidence of mastery' }));
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Evidence of mastery' })).toBeFocused();
-  await expect(page.getByText('4 of 4')).toBeVisible();
+  await expect(page.locator('#app').getByText('4 of 4')).toBeVisible();
   await tabTo(page.getByRole('button', { name: 'Start over' }));
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeFocused();
