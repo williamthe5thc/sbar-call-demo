@@ -12,6 +12,14 @@
 //                         in the wrong SBAR section (organization).
 //   request / timeFrame -> used by the "Clear request" rule in Recommendation.
 //
+// `assessment` is the bedside scene: one entry per object the learner can examine.
+//   id, label      -> the hotspot's id and its visible (and accessible) name
+//   x, y           -> where the label sits, in percent of the scene (left, top)
+//   tx, ty         -> optional: the object itself, in percent; a leader line is drawn to it
+//   findings       -> short sentences that say what is observed, never what it means
+//   panel          -> optional: 'monitor' or 'chart' also shows the monitor graphic or the chart tables
+// List them left to right: this is also the keyboard Tab order. A 3D scene could reuse this data.
+//
 // EVERY clinical value below is a PLACEHOLDER and needs nursing SME review.
 
 export const scenario = {
@@ -28,7 +36,7 @@ export const scenario = {
     'Communication in BSN programs is still taught mostly as knowledge rather than as a practiced skill (Wittenberg et al., 2021). SBAR is a common structure for calls to providers, and SBAR-based simulation has improved communication clarity in some studies, though the evidence is mostly low quality (Yun et al., 2023). This demo gives learners repeated, low-stakes practice building that call.',
 
   situation:
-    'It is 2:00 a.m. You are the night nurse. Mr. Morgan, a fictional 58-year-old in Room 12, is on day 1 after abdominal surgery. His numbers have been drifting for hours. Review the chart, then build your SBAR call to the on-call provider.',
+    'It is 2:00 a.m. You are the night nurse. Mr. Morgan, a fictional 58-year-old in Room 12, is on day 1 after abdominal surgery. His numbers have been drifting for hours. Examine him at the bedside, then build your SBAR call to the on-call provider.',
 
   chart: {
     patient: 'Mr. Morgan, age 58, Room 12 (fictional)',
@@ -52,6 +60,29 @@ export const scenario = {
     ],
     labs: ['Hemoglobin 10.9 g/dL at 6:00 p.m. (before surgery: 12.8 g/dL)'],
   },
+
+  assessment: [
+    { id: 'ivpump', label: 'IV pump', x: 16, y: 41.6, tx: 16, ty: 48.5,
+      findings: ['The IV pump is running at the maintenance rate.', 'No alarms are showing.', 'The fluid bag is about half full.'] },
+    { id: 'pca', label: 'PCA pump', x: 16.3, y: 81.6, tx: 16.3, ty: 76.8,
+      findings: ['The PCA pump is on and working.', 'No alarms are showing.', 'The handset is within his reach.'] },
+    { id: 'skin', label: "Patient's skin", x: 28.5, y: 53.6, tx: 32.8, ty: 62.8,
+      findings: ['His skin feels cool to the touch.', 'His skin is damp.'] },
+    { id: 'monitor', label: 'Monitor', x: 41.3, y: 8, tx: 41.3, ty: 13, panel: 'monitor',
+      findings: ['The monitor shows a heart rate of 112 beats per minute.', 'Blood pressure reads 92/54 mmHg.', 'Respiratory rate is 22 breaths per minute and SpO2 is 94%.', 'The trend on the monitor starts at 6:00 p.m., with a heart rate of 84 and a blood pressure of 128/78.'] },
+    { id: 'ivsite', label: 'IV site', x: 41.9, y: 41.6, tx: 42, ty: 69.4,
+      findings: ['The IV site in his left arm is clean and dry.', 'There is no redness or swelling around it.'] },
+    { id: 'drain', label: 'Surgical drain', x: 51.3, y: 90.4, tx: 51.3, ty: 74.4,
+      findings: ['The drain bulb holds 120 mL since the last check.', 'The fluid in the bulb is red.', 'The tubing is not kinked.', 'The check at 12:00 a.m. was 70 mL.'] },
+    { id: 'dressing', label: 'Dressing', x: 55, y: 53.6, tx: 55.3, ty: 60,
+      findings: ['The dressing over the incision is dry and intact.', 'The tape edges are sealed.', 'No drainage shows on the gauze.'] },
+    { id: 'abdomen', label: 'Abdomen', x: 70, y: 41.6, tx: 62.5, ty: 60.8,
+      findings: ['The abdomen looks rounded and feels firm when touched.', 'He tenses when you press near the incision.', 'He rates his pain 8 out of 10.'] },
+    { id: 'urine', label: 'Urine bag', x: 73.8, y: 94, tx: 73.5, ty: 89.6,
+      findings: ['The collection bag holds 20 mL from the last hour.', 'The urine is dark yellow.', 'The tubing is not kinked.'] },
+    { id: 'chart', label: 'Chart', x: 92.3, y: 53.6, tx: 91.3, ty: 57.6, panel: 'chart',
+      findings: ['The chart is open to the vital signs trend, nursing notes, current medications and labs.'] },
+  ],
 
   sections: [
     {

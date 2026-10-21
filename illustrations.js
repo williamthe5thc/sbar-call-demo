@@ -182,7 +182,7 @@ export function monitorFigure(chart, placeholderTag) {
   return `
     <figure class="scene monitor">
       ${svg}
-      <figcaption class="scene-cap">Latest values (${esc(d.lastTime)}). The full table is below. ${placeholderTag}</figcaption>
+      <figcaption class="scene-cap">Latest values (${esc(d.lastTime)}). The full table is in the chart. ${placeholderTag}</figcaption>
     </figure>`;
 }
 
@@ -305,4 +305,164 @@ export function sunriseScene() {
     <!-- plant -->
     <rect x="598" y="150" width="22" height="26" rx="3" ${f('pot')}/>
     <path d="M609 150 q-16 -20 -4 -34 q12 12 4 34 M609 150 q14 -18 4 -36 q-14 14 -4 36" ${f('leaf')}/>`);
+}
+
+
+/* ---------- 6. Assess the patient: the bedside scene (decorative) ----------
+   800 x 500 units. Hotspot positions in scenario.js are percentages of this box.
+   Everything here is aria-hidden: the findings are all in HTML. */
+
+export function assessSvg(chart, hotspots = []) {
+  const d = monitorData(chart);
+  const mound = 'M284 346 C286 324 298 314 322 314 L382 312 C396 306 420 297 452 296 C486 296 510 306 530 316 L574 322 C604 322 630 320 646 330 L654 346 Z';
+  const leaders = hotspots.filter((h) => h.tx != null).map((h) => {
+    const [x1, y1, x2, y2] = [h.x * 8, h.y * 5, h.tx * 8, h.ty * 5];
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#08101f" stroke-opacity=".75" stroke-width="4" stroke-linecap="round"/>
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${s('lamp', 2)}/>
+      <circle cx="${x2}" cy="${y2}" r="6" ${f('lamp')} stroke="#08101f" stroke-width="2.5"/>`;
+  }).join('');
+  const city = [[612, 168, 14, 16], [630, 158, 16, 26], [652, 164, 12, 20], [670, 150, 18, 34], [694, 160, 14, 24], [712, 168, 16, 16]]
+    .map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${f('floor')}/>
+      <rect x="${x + 3}" y="${y + 4}" width="3" height="3" ${f('lamp')} opacity=".8"/><rect x="${x + w - 7}" y="${y + 11}" width="3" height="3" ${f('lamp')} opacity=".6"/>`).join('');
+  const hrPts = '268,100 288,100 294,91 301,108 308,86 315,100 336,100 342,95 349,100 392,100';
+  return `
+  <svg viewBox="0 0 800 500" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <clipPath id="il-mound"><path d="${mound}"/></clipPath>
+      <clipPath id="il-bag"><path d="M566 408 h44 q8 0 8 8 v20 q0 12 -12 12 h-36 q-12 0 -12 -12 v-20 q0 -8 8 -8z"/></clipPath>
+    </defs>
+    <!-- room -->
+    <rect width="800" height="500" ${f('wall')}/>
+    <rect y="356" width="800" height="144" ${f('floor')}/>
+    <rect y="350" width="800" height="9" ${f('floor2')}/>
+    <path d="M0 400 H800 M0 440 H800 M0 478 H800" ${s('floor2', 1.5)} opacity=".6"/>
+    ${window_(590, 40, 170, 150, 'sky', nightSky(590, 40) + city)}
+    <circle cx="540" cy="82" r="24" ${f('frame')}/><circle cx="540" cy="82" r="19" ${f('clock')}/>
+    <path d="M540 66 V69 M556 82 H553 M540 98 V95 M524 82 H527" ${s('ink', 1.5)}/>
+    <path d="M540 82 V68 M540 82 L548 86" ${s('ink', 2.2)}/>
+    <!-- headwall rail, outlet and reading light -->
+    <rect x="196" y="252" width="420" height="8" rx="3" ${f('frame2')}/>
+    <rect x="566" y="232" width="30" height="22" rx="3" ${f('frame')}/><circle cx="576" cy="243" r="3" ${f('ink')}/><circle cx="587" cy="243" r="3" ${f('ink')}/>
+    <path d="M488 206 L440 330 L548 330 Z" ${f('lamp')} opacity=".06"/>
+    <path d="M470 252 V220 L490 206" ${s('metal', 4)}/>
+    <path d="M482 198 L506 212 L496 218 L476 206 Z" ${f('lamp')}/>
+    <!-- bedside monitor on a wall arm (the data-driven numbers) -->
+    <rect x="322" y="184" width="16" height="30" ${f('frame2')}/><rect x="308" y="212" width="44" height="8" rx="3" ${f('frame2')}/>
+    <rect x="252" y="64" width="156" height="122" rx="10" ${f('frame2')}/>
+    <rect x="258" y="70" width="144" height="110" rx="7" ${f('frame')}/>
+    <rect x="263" y="75" width="134" height="100" rx="4" ${f('screen')}/>
+    <polyline points="${hrPts}" ${s('ok', 2)}/><circle class="blink" cx="396" cy="100" r="2.6" ${f('ok')}/>
+    <text x="270" y="124" font-size="11" font-weight="700" ${f('muted')}>HR</text>
+    <text x="270" y="150" font-size="27" font-weight="700" ${f('hr')}>${esc(d.last.hr)}</text>
+    <text x="326" y="124" font-size="11" font-weight="700" ${f('muted')}>BP</text>
+    <text x="326" y="148" font-size="21" font-weight="700" ${f('bp')}>${esc(d.last.bp)}</text>
+    <text x="270" y="168" font-size="11" ${f('text')}>RR ${esc(d.last.rr)}</text>
+    <text x="326" y="168" font-size="11" ${f('text')}>SpO2 ${esc(d.last.spo2)}</text>
+    <!-- bed: shadow, headboard, frame, wheels, far rail -->
+    <ellipse cx="430" cy="450" rx="270" ry="10" fill="#000" opacity=".35"/>
+    <rect x="176" y="236" width="26" height="176" rx="7" ${f('wood')}/><rect x="182" y="246" width="6" height="150" rx="3" fill="#000" opacity=".18"/>
+    <rect x="664" y="330" width="18" height="82" rx="6" ${f('wood')}/>
+    <rect x="214" y="408" width="10" height="28" ${f('frame2')}/><rect x="640" y="408" width="10" height="28" ${f('frame2')}/>
+    <circle cx="219" cy="442" r="10" ${f('phone')}/><circle cx="219" cy="442" r="3.5" ${f('metal')}/>
+    <circle cx="645" cy="442" r="10" ${f('phone')}/><circle cx="645" cy="442" r="3.5" ${f('metal')}/>
+    <rect x="196" y="392" width="470" height="16" rx="4" ${f('frame2')}/>
+    <rect x="212" y="284" width="190" height="58" rx="8" ${s('metal', 5)}/>
+    <path d="M246 284 V342 M280 284 V342 M314 284 V342 M348 284 V342 M382 284 V342" ${s('metal', 4)}/>
+    <!-- mattress -->
+    <rect x="200" y="342" width="462" height="50" rx="10" ${f('mattress')}/>
+    <path d="M206 345 H656" ${s('pillow', 2)} opacity=".7"/>
+    <path d="M204 370 H658" ${s('sheet2', 1.5)}/>
+    <!-- patient: pillow, head, neck -->
+    <ellipse cx="246" cy="336" rx="54" ry="17" ${f('pillow')}/>
+    <path d="M194 338 q52 22 104 0 q-6 14 -52 14 q-46 0 -52 -14z" ${f('sheet2')} opacity=".55"/>
+    <rect x="266" y="326" width="26" height="24" rx="8" ${f('skin3')}/>
+    <ellipse cx="226" cy="314" rx="4.5" ry="8" ${f('skin3')}/><ellipse cx="278" cy="314" rx="4.5" ry="8" ${f('skin3')}/>
+    <circle cx="252" cy="312" r="26" ${f('skin3')}/>
+    <path d="M226 310 C222 280 248 274 262 281 C277 287 281 298 279 310 C270 297 246 292 226 310 z" ${f('hair')}/>
+    <path d="M239 307 l11 -3 M266 307 l-11 -3" ${s('ink', 2)}/>
+    <path d="M240 316 q5 4 10 0 M256 316 q5 4 10 0" ${s('ink', 2)}/>
+    <path d="M247 330 q6 -5 12 0" ${s('ink', 2)}/>
+    <!-- body under the sheet, gown, abdomen with dressing, blanket -->
+    <g clip-path="url(#il-mound)">
+      <path d="${mound}" ${f('sheet')}/>
+      <rect x="284" y="330" width="380" height="20" ${f('sheet2')} opacity=".6"/>
+      <path d="M330 346 q10 -14 30 -20 M560 346 q8 -12 22 -16 M600 346 q6 -10 18 -12" ${s('sheet2', 2)}/>
+      <rect x="284" y="296" width="114" height="54" ${f('gown')}/>
+      <rect x="284" y="334" width="114" height="16" ${f('gown2')} opacity=".7"/>
+      <g ${f('gown2')}><circle cx="306" cy="326" r="2.2"/><circle cx="328" cy="336" r="2.2"/><circle cx="350" cy="324" r="2.2"/><circle cx="372" cy="334" r="2.2"/><circle cx="388" cy="322" r="2.2"/><circle cx="316" cy="342" r="2.2"/><circle cx="362" cy="343" r="2.2"/></g>
+      <path d="M398 296 V350" ${s('gown2', 3)}/>
+      <rect x="400" y="290" width="88" height="56" rx="6" ${f('skin3')}/>
+      <rect x="400" y="326" width="88" height="20" ${f('ink')} opacity=".18"/>
+      <rect x="406" y="299" width="72" height="35" rx="5" ${f('tape')}/>
+      <rect x="412" y="305" width="60" height="23" rx="3" ${f('gauze')}/>
+      <path d="M420 312 H464 M420 319 H456" ${s('sheet2', 1.5)}/>
+      <rect x="520" y="286" width="150" height="70" ${f('blanket')}/>
+      <rect x="520" y="286" width="16" height="70" ${f('pillow')} opacity=".35"/>
+      <path d="M560 300 V350 M600 300 V350" ${s('sheet', 2)} opacity=".18"/>
+      <path d="M322 314 L382 312 C396 306 420 297 452 296 C486 296 510 306 530 316" ${s('pillow', 2)} opacity=".6" transform="translate(0 2)"/>
+    </g>
+    <path d="M284 346 C286 324 298 314 322 314" ${s('sheet2', 1.5)} opacity=".0"/>
+    <!-- near foot-end rail and urine tubing -->
+    <rect x="548" y="326" width="102" height="48" rx="8" ${s('metal', 5)}/>
+    <path d="M582 326 V374 M616 326 V374" ${s('metal', 4)}/>
+    <path d="M572 410 C566 392 540 386 522 378 C508 372 504 360 508 346" fill="none" stroke="var(--il-urinetube)" stroke-width="3" stroke-linecap="round"/>
+    <!-- arm, IV tape, wristband, pulse oximeter -->
+    <ellipse cx="300" cy="336" rx="19" ry="15" ${f('gown')}/><ellipse cx="300" cy="342" rx="19" ry="9" ${f('gown2')} opacity=".6"/>
+    <path d="M306 342 C318 339 336 338 352 342 L352 355 C336 357 318 357 306 355 z" ${f('skin3')}/>
+    <path d="M306 352 C318 355 336 355 352 353 V355 C336 358 318 358 306 355z" ${f('ink')} opacity=".25"/>
+    <ellipse cx="364" cy="349" rx="14" ry="7" ${f('skin3')}/>
+    <rect x="368" y="342" width="11" height="14" rx="3" ${f('phone')}/><circle cx="373" cy="349" r="2" ${f('hr')}/>
+    <rect x="344" y="341" width="8" height="15" rx="2" ${f('pillow')}/>
+    <rect x="328" y="340" width="13" height="14" rx="2" ${f('tape')} transform="rotate(-8 334 347)"/>
+    <!-- drain bulb clipped to the gown -->
+    <rect x="394" y="314" width="9" height="16" rx="2" ${f('metal')} stroke="var(--il-ink)" stroke-width="1"/>
+    <path d="M402 326 H408" ${s('metal', 3)}/>
+    <path d="M410 328 C410 318 416 316 424 316" fill="none" stroke="var(--il-iv)" stroke-width="3" stroke-linecap="round"/>
+    <rect x="404" y="326" width="12" height="9" rx="2" ${f('phone')}/>
+    <ellipse cx="410" cy="352" rx="14" ry="18" ${f('bagplastic')} stroke="var(--il-metal)" stroke-width="2"/>
+    <path d="M397 354 q13 8 26 0 v4 q0 12 -13 14 q-13 -2 -13 -14z" ${f('blood')}/>
+    <path d="M401 346 q9 3 18 0 M401 361 q9 3 18 0" ${s('metal', 1.2)} opacity=".6"/>
+    <ellipse cx="403" cy="344" rx="3" ry="6" fill="#fff" opacity=".55"/>
+    <!-- PCA handset and cable -->
+    <path d="M160 366 C220 414 330 404 376 364" ${s('ink', 2.5)}/>
+    <rect x="372" y="358" width="20" height="11" rx="5" ${f('lamp')} stroke="var(--il-ink)" stroke-width="1.5"/>
+    <!-- urine bag on the bed frame -->
+    <rect x="580" y="404" width="16" height="8" rx="2" ${f('metal')}/>
+    <path d="M566 408 h44 q8 0 8 8 v20 q0 12 -12 12 h-36 q-12 0 -12 -12 v-20 q0 -8 8 -8z" ${f('bagplastic')} stroke="var(--il-metal)" stroke-width="2"/>
+    <rect x="558" y="428" width="64" height="26" ${f('urine')} clip-path="url(#il-bag)"/>
+    <path d="M566 422 h9 M566 432 h9 M566 442 h9" ${s('ink', 1.5)} opacity=".5"/>
+    <rect x="584" y="448" width="8" height="5" rx="1" ${f('ink')}/>
+    <!-- over-bed table, chart on a clipboard, cup -->
+    <rect x="756" y="356" width="10" height="76" ${f('frame2')}/><rect x="724" y="430" width="74" height="8" rx="3" ${f('frame2')}/>
+    <circle cx="732" cy="442" r="5" ${f('phone')}/><circle cx="790" cy="442" r="5" ${f('phone')}/>
+    <rect x="640" y="346" width="150" height="11" rx="4" ${f('desk')}/><rect x="640" y="353" width="150" height="4" rx="2" ${f('desk2')}/>
+    <g transform="rotate(-5 730 346)">
+      <rect x="702" y="288" width="56" height="60" rx="4" ${f('desk2')}/>
+      <rect x="707" y="296" width="46" height="48" rx="2" ${f('paper')}/>
+      <polyline points="711,312 719,312 722,304 726,318 730,308 734,312 748,312" ${s('hr', 1.6)}/>
+      <path d="M711 324 H748 M711 331 H742 M711 338 H746" ${s('grid', 1.5)}/>
+      <rect x="720" y="283" width="20" height="10" rx="2" ${f('metal')}/>
+    </g>
+    <rect x="662" y="322" width="18" height="24" rx="3" ${f('cup')}/><path d="M676 318 L672 336" ${s('lamp', 2)}/>
+    <!-- IV pole, fluid bag, drip chamber, infusion pump, PCA pump -->
+    <path d="M128 92 V436 M100 92 H156" ${s('metal', 4)}/>
+    <path d="M128 436 L96 448 M128 436 L160 448 M128 436 V450" ${s('metal', 4)}/>
+    <circle cx="96" cy="452" r="4" ${f('phone')}/><circle cx="160" cy="452" r="4" ${f('phone')}/><circle cx="128" cy="454" r="4" ${f('phone')}/>
+    <path d="M110 102 h36 q6 0 6 6 v46 q0 18 -24 18 q-24 0 -24 -18 v-46 q0 -6 6 -6z" ${f('bagplastic')} stroke="var(--il-metal)" stroke-width="2"/>
+    <path d="M104 134 h48 v20 q0 18 -24 18 q-24 0 -24 -18z" ${f('fluid')}/>
+    <circle cx="128" cy="110" r="3" ${f('ink')}/>
+    <rect x="121" y="188" width="14" height="18" rx="4" ${f('bagplastic')} stroke="var(--il-metal)" stroke-width="1.5"/><circle cx="128" cy="198" r="2" ${f('fluid')}/>
+    <path d="M128 172 V188 M128 206 V240" ${s('iv', 2)}/>
+    <rect x="96" y="240" width="64" height="54" rx="6" ${f('pump')} stroke="var(--il-pump2)" stroke-width="2"/>
+    <rect x="103" y="247" width="50" height="22" rx="3" ${f('screen')}/>
+    <text x="128" y="263" font-size="12" font-weight="700" text-anchor="middle" ${f('ok')}>RUN</text>
+    <circle cx="110" cy="282" r="4" ${f('pump2')}/><circle cx="128" cy="282" r="4" ${f('pump2')}/><circle cx="146" cy="282" r="4" ${f('ok')}/>
+    <path d="M160 270 C215 236 330 236 336 340" ${s('iv', 2.5)}/>
+    <rect x="96" y="332" width="64" height="52" rx="6" ${f('pump')} stroke="var(--il-pump2)" stroke-width="2"/>
+    <rect x="102" y="338" width="52" height="16" rx="3" ${f('screen')}/>
+    <rect x="106" y="343" width="36" height="6" rx="2" ${f('bagplastic')}/><path d="M142 346 H150" ${s('metal', 2)}/>
+    <rect x="104" y="362" width="18" height="12" rx="3" ${f('pump2')}/><rect x="126" y="362" width="18" height="12" rx="3" ${f('pump2')}/>
+    <circle cx="148" cy="372" r="3.5" ${f('ok')}/>
+    <g class="leaders">${leaders}</g>
+  </svg>`;
 }

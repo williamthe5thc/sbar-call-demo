@@ -34,6 +34,19 @@ The first version was all text, so each step now has a flat, hand-built inline S
 - Motion: only a monitor dot blinking three times and the call signal pulsing three times (each under 4 seconds). `prefers-reduced-motion` turns all animation off.
 - Layout: SVGs are `width: 100%; height: auto`, stay compact at 320px, and add no horizontal scroll. Monitor text is sized so it stays readable at that width.
 
+## Why the learner examines the scene
+A chart handed over in full tells the learner what matters. Real nurses decide where to look, so the learner opens the objects they think are worth checking, and the findings state what is observed, not what it means. Some findings are normal or irrelevant (IV site, dressing, PCA pump). Opening everything is not required and nothing blocks continuing; a gentle note appears if nothing was opened. Opened findings collect in "Your assessment notes", shown again on the Build step. All findings are data in `scenario.js` (`assessment`), so a new case or a later 3D scene reuses them. Clinical values are placeholders.
+
+## How the hotspots stay accessible
+- Hotspots are real `<button>`s in a list, in DOM (Tab) order left to right, positioned by percentage over a fixed 8:5 scene. The SVG is `aria-hidden`; all information is in HTML.
+- Each shows a visible text label and uses it as its name (2.5.3). Targets are at least 44 px; the focus ring is a white ring over a dark one so it is visible on the scene and the page.
+- Activating one keeps focus on the button, fills a panel (`aria-live="off"`, referenced by `aria-controls`), marks the button `aria-current="true"` and announces "<object>: <first sentence> Added to your notes." through the shared live region. Opened and active states use an icon and underline, not color alone.
+- "Show all findings as a list" is the complete text alternative, including the vitals table.
+- Below 640 px of container width the overlay and leader lines are hidden and the same buttons become a plain list above the panel. No horizontal page scroll at 320 px.
+
+## Read aloud
+For people who prefer listening (UDL, multiple means of representation). This is separate from screen readers and does not replace them. Buttons appear on the findings panel, the notes list and each SBAR fieldset only when `speechSynthesis` exists. It never auto-plays, starting one reader stops another, the label toggles to "Stop reading", and it stops on step change. One utterance per sentence (onstart marks it, onend advances) is more reliable than word-boundary events. The sentence being read gets a background plus a thick underline (not color alone) with at least 3:1 contrast in light and dark.
+
 ## Focus and live regions
 Every step has an h2 with `tabindex="-1"`. When the step changes, code moves focus to it and updates the page title, so keyboard and screen-reader users know the view changed. One `role="status"` live region is reused for announcements (checkbox changes, moves, the provider reply). It is cleared before each message so repeats are still read.
 

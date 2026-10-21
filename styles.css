@@ -16,6 +16,8 @@
   --warn-bg: #fff4cc;
   --warn-text: #4a3a00;
   --warn-border: #7a5f00;
+  --mark-bg: #ffe27a;
+  --mark-text: #1a1d21;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -32,6 +34,8 @@
     --warn-bg: #3a3000;
     --warn-text: #ffe9a0;
     --warn-border: #c9a500;
+    --mark-bg: #8a6a00;
+    --mark-text: #ffffff;
   }
 }
 
@@ -46,6 +50,7 @@ body {
   overflow-wrap: anywhere;
 }
 .wrap { max-width: 48rem; margin: 0 auto; padding: 0 1rem; }
+main.wrap.wide { max-width: 72rem; }
 h1, h2, h3 { line-height: 1.25; }
 h1 { font-size: 1.75rem; margin: 0; }
 h2 { font-size: 1.5rem; margin: 1.25rem 0 .5rem; }
@@ -142,6 +147,8 @@ textarea { width: 100%; font: inherit; color: var(--text); background: var(--bg)
   --il-phone: #101c30; --il-desk: #8a6a4d; --il-desk2: #5e4632; --il-cup: #e9eef5;
   --il-screen: #07111f; --il-screen2: #12233b; --il-text: #f2f6fb; --il-muted: #bccbe0; --il-grid: #6f87a8;
   --il-hr: #ffb454; --il-bp: #7fd4ff; --il-ok: #7ee2a0; --il-line: #9fc2ea;
+  --il-gown: #9cc0e2; --il-gown2: #7ba2c8; --il-sheet2: #b3c3da; --il-mattress: #c6d3e5; --il-bagplastic: #e4f0f9; --il-fluid: #8fd0ee;
+  --il-blood: #b5333a; --il-urine: #e6c445; --il-urinetube: #e8dc92; --il-tape: #e9ddc5; --il-gauze: #f8fafc; --il-paper: #f6f8fb; --il-pump: #e4ebf4; --il-pump2: #9fb4cf;
   --il-dawn1: #f6b273; --il-dawn2: #ffd9a0; --il-sun: #fff0b8; --il-hill: #d9845a; --il-pot: #c9724a; --il-leaf: #62b37f;
   margin: 1rem 0; border-radius: .75rem; overflow: hidden; background: var(--il-wall);
   border: 1px solid var(--border);
@@ -180,3 +187,69 @@ figure.scene { margin: 1rem 0; }
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
+
+/* ---------- Assess the patient ----------
+   The scene keeps a fixed 8:5 aspect ratio, so hotspot percentages always land on
+   the same spot in the picture. Below 640px of container width the overlay turns
+   into a plain list of buttons above the findings panel. */
+.assess { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); margin-top: 1rem; }
+@media (min-width: 64rem) {
+  .assess { grid-template-columns: minmax(0, 1fr) 20rem; align-items: start; }
+  .assess-side { position: sticky; top: 1rem; }
+}
+.assess-scene { container-type: inline-size; container-name: scene; }
+.scene.scene-assess { max-width: none; margin: 0; position: relative; aspect-ratio: 8 / 5; }
+.scene-assess > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hotspots { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; }
+.hotspots li { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%); }
+
+.hs {
+  display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; cursor: pointer;
+  min-height: 44px; min-width: 44px; padding: .25rem .85rem .25rem .5rem;
+  background: #ffffff; color: #14213a; border: 2px solid #14213a; border-radius: 999px;
+  font-size: .8125rem; font-weight: 700; line-height: 1.1;
+}
+.hs .ic { flex: none; width: 1.4rem; height: 1.4rem; border: 2px solid #14213a; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; line-height: 1; }
+.hs .ic::after { content: "+"; }
+.hs.seen { background: #e3f6e9; }
+.hs.seen .ic::after { content: "\2713"; }
+.hs[aria-current="true"] { background: #ffc857; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; }
+.hs[aria-current="true"] .ic::after { content: "\25CF"; }
+.hs:hover { background: #fff1c4; }
+.hs:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; box-shadow: 0 0 0 2px #0a1220; }
+
+@container scene (max-width: 639px) {
+  .scene.scene-assess { aspect-ratio: auto; overflow: hidden; }
+  .scene-assess > svg { position: static; height: auto; max-height: 11rem; }
+  .scene-assess .leaders { display: none; }
+  .hotspots { position: static; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .5rem; padding: .75rem; background: var(--surface); }
+  .hotspots li { position: static; transform: none; }
+  .hs { width: 100%; }
+  .hs:focus-visible { outline-color: var(--focus); box-shadow: none; }
+}
+
+.panel, .notes-box { border: 2px solid var(--border); border-radius: .5rem; padding: .25rem 1rem 1rem; margin-top: 1rem; background: var(--surface); }
+.assess-main .panel { margin-top: 1rem; }
+.notes-box { margin-top: 0; }
+.panel h3, .notes-box h3 { margin-top: .75rem; }
+.ph-line { margin: 0 0 .5rem; }
+.findings { margin: .25rem 0; padding-left: 1.25rem; }
+.findings li, .notes li { margin: .35rem 0; }
+.notes { padding-left: 1.25rem; margin: .5rem 0 0; }
+.panel-tools { margin: .5rem 0; }
+.panel .scene.monitor { margin: .5rem 0; }
+.all-findings { margin-top: 1rem; }
+.all-findings h4 { margin: 1rem 0 .25rem; }
+.all-findings ul { margin: .25rem 0; padding-left: 1.25rem; }
+.read-btn { min-height: 36px; padding: .15rem .8rem; }
+.read-btn.on { background: var(--primary); color: var(--on-primary); }
+
+/* The sentence being read: a background and a thick underline, so it is not color alone. */
+[data-sent].reading {
+  background: var(--mark-bg); color: var(--mark-text);
+  text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 3px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+
+.panel table { min-width: 42rem; }
+.panel th { overflow-wrap: normal; }

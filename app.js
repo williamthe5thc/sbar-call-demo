@@ -1,7 +1,8 @@
 // App logic: state, rendering, scoring, focus and attempt history.
 // No clinical content here; it all comes from scenario.js.
 import { scenario } from './scenario.js';
-import { introScene, monitorFigure, nurseStationScene, providerScene, sunriseScene, MOODS, moodFor } from './illustrations.js';
+import { introScene, monitorFigure, nurseStationScene, providerScene, sunriseScene, assessSvg, MOODS, moodFor } from './illustrations.js';
+import { supported as speechSupported, toggleReading, stopReading } from './readaloud.js';
 
 const app = document.getElementById('app');
 const live = document.getElementById('live');
@@ -11,7 +12,10 @@ const state = {
   selected: { S: [], B: [], A: [], R: [] }, // ordered statement ids per section
   attempts: [], // { n, met: [criterion ids] }
   last: null, // result of the latest submission
+  notes: [], // assessment hotspot ids the learner has opened, in order
+  active: null, // the hotspot whose findings are showing
 };
+const hotspotById = Object.fromEntries(scenario.assessment.map((h) => [h.id, h]));
 
 // Look-up table: id -> statement, remembering which section it is shown in.
 const byId = {};
@@ -89,7 +93,9 @@ function announce(msg) {
 
 // Each step swaps the whole view, updates the page title, and moves focus to the
 // step's heading so keyboard and screen reader users know the page changed.
-function go(title, html, { focus = true } = {}) {
+function go(title, html, { focus = true, wide = false } = {}) {
+  stopReading(); // speech never carries over to another step
+  document.getElementById('main').classList.toggle('wide', wide);
   app.innerHTML = html;
   document.title = `${title} | The 2 a.m. Call`;
   if (focus) app.querySelector('[data-step-heading]').focus();
@@ -98,8 +104,9 @@ function go(title, html, { focus = true } = {}) {
 
 const tag = '<span class="tag">PLACEHOLDER</span>';
 
-function chartHtml() {
+function chartHtml(level = 3) {
   const c = scenario.chart;
+  const h = `h${level}`;
   return `
     <p><strong>${esc(c.patient)}</strong></p>
     <div class="table-wrap" role="region" aria-label="Vital signs table, scrolls sideways on small screens" tabindex="0">
@@ -109,11 +116,11 @@ function chartHtml() {
         <tbody>${c.vitals.map((r) => `<tr><th scope="row">${esc(r.time)}${tag}</th>${r.values.map((v) => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody>
       </table>
     </div>
-    <h3>Nursing notes</h3>
+    <${h}>Nursing notes</${h}>
     <ul>${c.notes.map((n) => `<li>${esc(n)}${tag}</li>`).join('')}</ul>
-    <h3>Current medications</h3>
+    <${h}>Current medications</${h}>
     <ul>${c.meds.map((n) => `<li>${esc(n)}${tag}</li>`).join('')}</ul>
-    <h3>Labs</h3>
+    <${h}>Labs</${h}>
     <ul>${c.labs.map((n) => `<li>${esc(n)}${tag}</li>`).join('')}</ul>`;
 }
 
@@ -130,7 +137,7 @@ function showIntro() {
     <p>${esc(scenario.rationale)}</p>
     <h3>How it works</h3>
     <ol>
-      <li>Review the chart for a fictional patient.</li>
+      <li>Examine a fictional patient at the bedside: select objects in the scene to see what you observe.</li>
       <li>Build your SBAR call: choose statements for each section and put them in order.</li>
       <li>Get feedback on four criteria: Organization, Completeness, Prioritization and Clear request.</li>
       <li>Try again until all four are met. There is no time limit and no grade.</li>
@@ -140,21 +147,106 @@ function showIntro() {
   document.title = 'The 2 a.m. Call | SBAR practice';
 }
 
-function showChart() {
-  go('Chart review', `
-    <h2 tabindex="-1" data-step-heading>Chart review</h2>
+/* ---------- Read aloud and sentence markup ---------- */
+
+const sent = (t, say = '') => `<span data-sent${say ? ` data-say="${esc(say)}"` : ''}>${esc(t)}</span>`;
+const readBtn = (target, extra = '') => (speechSupported()
+  ? `<button type="button" class="small-btn read-btn" data-act="read" data-target="${target}"${extra}><span class="rl">Read aloud</span></button>`
+  : '');
+
+/* ---------- Assess the patient ---------- */
+
+function notesListHtml() {
+  if (!state.notes.length) return '<p class="empty">No notes yet. Select an object in the scene and what you observe is added here.</p>';
+  return `<ol class="notes">${state.notes.map((id) => {
+    const h = hotspotById[id];
+    return `<li><strong>${sent(`${h.label}:`, `${h.label}.`)}</strong> ${h.findings.map((t) => sent(t)).join(' ')}</li>`;
+  }).join('')}</ol>`;
+}
+
+function panelHtml(h) {
+  return `
+    <h3 id="panel-title">${esc(h.label)}</h3>
+    <p class="ph-line">${tag}</p>
+    ${h.panel === 'monitor' ? monitorFigure(scenario.chart, tag) : ''}
+    <ul class="findings">${h.findings.map((t) => `<li>${sent(t)}</li>`).join('')}</ul>
+    <div class="panel-tools">${readBtn('#finding-panel .findings')}</div>
+    ${h.panel === 'chart' ? chartHtml(4) : ''}`;
+}
+
+const emptyPanelHtml = `
+  <h3 id="panel-title">Findings</h3>
+  <p class="empty">Select an object in the scene. What you observe appears here.</p>`;
+
+function allFindingsHtml() {
+  return scenario.assessment.map((h) => `
+    <h4>${esc(h.label)}</h4>
+    <ul>${h.findings.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    ${h.panel === 'chart' ? chartHtml(5) : ''}`).join('');
+}
+
+function showAssess() {
+  go('Assess the patient', `
+    <h2 tabindex="-1" data-step-heading>Assess the patient</h2>
     <p class="banner">${esc(scenario.banner)}</p>
     <p>${esc(scenario.situation)}</p>
-    ${monitorFigure(scenario.chart, tag)}
-    ${chartHtml()}
-    <div class="btn-row"><button type="button" class="btn" data-act="build">Build the call</button></div>`);
+    <p>Look around the bedside. Select an object to see what you observe. Each one you open is added to your assessment notes. You do not have to open everything.</p>
+    <div class="assess">
+      <div class="assess-main">
+        <div class="assess-scene">
+          <div class="scene scene-assess scene-frame">
+            ${assessSvg(scenario.chart, scenario.assessment)}
+            <ul class="hotspots" role="list" aria-label="Things to examine at the bedside">
+              ${scenario.assessment.map((h) => `
+              <li style="--x:${h.x}%;--y:${h.y}%"><button type="button" class="hs${state.notes.includes(h.id) ? ' seen' : ''}" data-act="hotspot" data-id="${h.id}" aria-controls="finding-panel"><span class="ic" aria-hidden="true"></span><span>${esc(h.label)}</span></button></li>`).join('')}
+            </ul>
+          </div>
+        </div>
+        <section id="finding-panel" class="panel" aria-live="off" aria-labelledby="panel-title">${emptyPanelHtml}</section>
+      </div>
+      <div class="assess-side">
+        <section class="notes-box" aria-labelledby="notes-title">
+          <h3 id="notes-title">Your assessment notes</h3>
+          <div class="panel-tools">${readBtn('#notes-list')}</div>
+          <div id="notes-list">${notesListHtml()}</div>
+        </section>
+        <details class="all-findings">
+          <summary>Show all findings as a list</summary>
+          <p class="step-note">Every object's findings in plain text. ${tag}</p>
+          ${allFindingsHtml()}
+        </details>
+      </div>
+    </div>
+    <div class="btn-row"><button type="button" class="btn" data-act="build">Continue to build the call</button></div>
+    <p id="none-note" class="step-note"${state.notes.length ? ' hidden' : ''}>You have not opened anything yet. You can still continue, but the notes help when you build the call.</p>`, { wide: true });
+  state.active = null;
+}
+
+function openHotspot(btn) {
+  const h = hotspotById[btn.dataset.id];
+  stopReading();
+  const fresh = !state.notes.includes(h.id);
+  if (fresh) state.notes.push(h.id);
+  state.active = h.id;
+  const panel = document.getElementById('finding-panel');
+  panel.innerHTML = panelHtml(h);
+  panel.scrollIntoView({ block: 'nearest' }); // keeps focus on the hotspot, only nudges the page
+  app.querySelectorAll('.hs').forEach((b) => {
+    if (b === btn) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+  });
+  btn.classList.add('seen');
+  document.getElementById('notes-list').innerHTML = notesListHtml();
+  const none = document.getElementById('none-note');
+  if (none) none.hidden = true;
+  // Focus stays on the hotspot; the live region says what happened.
+  announce(`${h.label}: ${h.findings[0]} ${fresh ? 'Added to your notes.' : 'Already in your notes.'}`);
 }
 
 function optionsHtml(sec) {
   return sec.statements.map((s) => {
     const id = `cb-${s.id}`;
     const checked = state.selected[sec.key].includes(s.id) ? ' checked' : '';
-    return `<div class="opt"><input type="checkbox" id="${id}" value="${s.id}" data-sec="${sec.key}"${checked}><label for="${id}">${esc(s.text)}</label></div>`;
+    return `<div class="opt"><input type="checkbox" id="${id}" value="${s.id}" data-sec="${sec.key}"${checked}><label for="${id}" data-sent>${esc(s.text)}</label></div>`;
   }).join('');
 }
 
@@ -184,6 +276,12 @@ function showBuild() {
     <h2 tabindex="-1" data-step-heading>Build the call</h2>
     ${nurseStationScene()}
     <p>Tick the statements you would say in each part of the call. Chosen statements appear in a list below each group, in the order you will say them. Use Move up and Move down to reorder.</p>
+    <details open>
+      <summary>Your assessment notes</summary>
+      <div class="panel-tools">${readBtn('#notes-list-build')}</div>
+      <div id="notes-list-build">${notesListHtml()}</div>
+      <div class="btn-row"><button type="button" class="small-btn" data-act="assess">Go back to the patient</button></div>
+    </details>
     <details>
       <summary>View chart</summary>
       <p class="banner">${esc(scenario.banner)}</p>
@@ -191,9 +289,10 @@ function showBuild() {
     </details>
     <form id="call-form" novalidate>
       ${scenario.sections.map((sec) => `
-        <fieldset>
+        <fieldset id="fs-${sec.key}">
           <legend>${sec.name}</legend>
-          <p class="hint">${esc(sec.prompt)}</p>
+          <p class="hint" data-sent data-say="${esc(`${sec.name}. ${sec.prompt}`)}">${esc(sec.prompt)}</p>
+          <div class="panel-tools">${readBtn(`#fs-${sec.key}`)}</div>
           ${optionsHtml(sec)}
           <div class="picked">
             <h3 id="pt-${sec.key}">Your ${sec.name} statements, in order</h3>
@@ -274,13 +373,18 @@ app.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-act]');
   if (!btn || btn.getAttribute('aria-disabled') === 'true') return;
   const act = btn.dataset.act;
-  if (act === 'start') showChart();
-  else if (act === 'build') showBuild(); // selections stay in state, so "Try again" keeps them
+  if (act === 'start') showAssess();
+  else if (act === 'assess') showAssess();
+  else if (act === 'hotspot') openHotspot(btn);
+  else if (act === 'read') {
+    if (!toggleReading(btn, btn.dataset.target)) announce('Nothing to read yet.');
+  } else if (act === 'build') showBuild(); // selections stay in state, so "Try again" keeps them
   else if (act === 'mastery') showMastery();
   else if (act === 'restart') {
     state.selected = { S: [], B: [], A: [], R: [] };
     state.attempts = [];
     state.last = null;
+    state.notes = [];
     showIntro();
     app.querySelector('[data-step-heading]').focus();
   } else if (act === 'up' || act === 'down') move(btn.dataset.id, act);
