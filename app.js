@@ -129,7 +129,7 @@ function chartHtml(level = 3) {
 function showIntro() {
   go('Welcome', `
     <h2 tabindex="-1" data-step-heading>Welcome</h2>
-    ${introScene()}
+    ${introScene(scenario.chart)}
     <p class="label">${esc(scenario.label)}</p>
     <h3>The skill this practices</h3>
     <p>${esc(scenario.competency)}</p>

@@ -62,9 +62,9 @@ export const scenario = {
   },
 
   assessment: [
-    { id: 'ivpump', label: 'IV pump', x: 16, y: 41.6, tx: 16, ty: 48.5,
+    { id: 'ivpump', label: 'IV pump', x: 8.5, y: 44, tx: 16, ty: 48.5,
       findings: ['The IV pump is running at the maintenance rate.', 'No alarms are showing.', 'The fluid bag is about half full.'] },
-    { id: 'pca', label: 'PCA pump', x: 16.3, y: 81.6, tx: 16.3, ty: 76.8,
+    { id: 'pca', label: 'PCA pump', x: 9, y: 90, tx: 16.3, ty: 76.8,
       findings: ['The PCA pump is on and working.', 'No alarms are showing.', 'The handset is within his reach.'] },
     { id: 'skin', label: "Patient's skin", x: 28.5, y: 53.6, tx: 32.8, ty: 62.8,
       findings: ['His skin feels cool to the touch.', 'His skin is damp.'] },
@@ -74,9 +74,9 @@ export const scenario = {
       findings: ['The IV site in his left arm is clean and dry.', 'There is no redness or swelling around it.'] },
     { id: 'drain', label: 'Surgical drain', x: 51.3, y: 90.4, tx: 51.3, ty: 74.4,
       findings: ['The drain bulb holds 120 mL since the last check.', 'The fluid in the bulb is red.', 'The tubing is not kinked.', 'The check at 12:00 a.m. was 70 mL.'] },
-    { id: 'dressing', label: 'Dressing', x: 55, y: 53.6, tx: 55.3, ty: 60,
+    { id: 'dressing', label: 'Dressing', x: 55, y: 53.6, tx: 55.5, ty: 60.4,
       findings: ['The dressing over the incision is dry and intact.', 'The tape edges are sealed.', 'No drainage shows on the gauze.'] },
-    { id: 'abdomen', label: 'Abdomen', x: 70, y: 41.6, tx: 62.5, ty: 60.8,
+    { id: 'abdomen', label: 'Abdomen', x: 70, y: 41.6, tx: 61.3, ty: 61,
       findings: ['The abdomen looks rounded and feels firm when touched.', 'He tenses when you press near the incision.', 'He rates his pain 8 out of 10.'] },
     { id: 'urine', label: 'Urine bag', x: 73.8, y: 94, tx: 73.5, ty: 89.6,
       findings: ['The collection bag holds 20 mL from the last hour.', 'The urine is dark yellow.', 'The tubing is not kinked.'] },
