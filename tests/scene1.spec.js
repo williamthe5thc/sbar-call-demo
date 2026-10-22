@@ -10,7 +10,7 @@ const HS = scenario.assessment;
 const view = (page) => page.locator('#view');
 
 async function load(page) {
-  await page.goto('/scene1.html');
+  await page.goto('/index.html');
   await expect(page.locator('body')).toHaveAttribute('data-world', 'ready', { timeout: 90000 });
   await expect(page.locator('#start-btn')).not.toHaveAttribute('aria-disabled', 'true');
 }
@@ -64,10 +64,11 @@ for (const scheme of ['light', 'dark']) {
   });
 }
 
-test('the intro of the standard version links to the immersive beta', async ({ page }) => {
-  await page.goto('/index.html');
-  const link = page.getByRole('link', { name: 'Try the immersive version (beta)' });
-  await expect(link).toHaveAttribute('href', 'scene1.html');
+test('the standard version links back to the immersive version, in the header and on the intro', async ({ page }) => {
+  await page.goto('/standard.html');
+  const link = page.getByRole('link', { name: 'Switch to the immersive 3D version' });
+  await expect(link).toHaveAttribute('href', 'index.html');
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Immersive 3D version' })).toHaveAttribute('href', 'index.html');
 });
 
 test('start screen: labels, choices, focus moves to the scene heading after Start', async ({ page }) => {
@@ -339,12 +340,12 @@ test('without WebGL there is a clear message and a link to the standard version'
       return orig.call(this, type, ...rest);
     };
   });
-  await page.goto('/scene1.html');
+  await page.goto('/index.html');
   const dlg = page.getByRole('alertdialog');
   await expect(dlg).toBeVisible();
   await expect(dlg).toContainText('3D room is not available');
   await expect(page.locator('#nogl-title')).toBeFocused();
-  await expect(dlg.getByRole('link', { name: 'Open the standard version' })).toHaveAttribute('href', 'index.html');
+  await expect(dlg.getByRole('link', { name: 'Open the standard version' })).toHaveAttribute('href', 'standard.html');
   await axe(page);
 });
 
@@ -379,7 +380,7 @@ test('notes travel to the standard version through sessionStorage', async ({ pag
   await expect(page.locator('#end-notes')).toContainText('The drain bulb holds 120 mL since the last check.');
   expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem('sbar-scene1-notes')))).toEqual(['drain', 'abdomen']);
   await page.locator('#end-continue').click();
-  await page.waitForURL(/index\.html\?from=scene1/);
+  await page.waitForURL(/standard\.html\?from=scene1/);
   await expect(page.getByRole('heading', { name: 'Build the call' })).toBeFocused();
   await expect(page.locator('#notes-list-build')).toContainText('The drain bulb holds 120 mL since the last check.');
   await expect(page.locator('#notes-list-build')).toContainText('He tenses when you press near the incision.');
@@ -396,7 +397,7 @@ test('finishing with nothing examined is allowed and says so gently', async ({ p
 });
 
 test('the standard version still opens on its intro without the handoff', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
 });
 

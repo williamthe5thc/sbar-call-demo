@@ -9,7 +9,7 @@ const gl = (page) => page.locator('.gl');
 const frames = async (page) => Number(await gl(page).getAttribute('data-frames'));
 const settle = (page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
 const open3d = async (page) => {
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
   // Software WebGL (SwiftShader) blocks the page for a few seconds while the room builds, so wait for it first.
   await expect(frame(page)).toHaveAttribute('data-view', '3d', { timeout: 40000 });
@@ -129,8 +129,7 @@ test('Pause animation stops the idle animation and Play starts it again', async 
   await expect(pause).toBeVisible();
   await expect(gl(page)).toHaveAttribute('data-animating', 'true');
   const a = await frames(page);
-  await page.waitForTimeout(600);
-  expect(await frames(page)).toBeGreaterThan(a);
+  await expect.poll(() => frames(page), { timeout: 10000 }).toBeGreaterThan(a); // software WebGL can be slow
   await pause.click();
   await expect(page.getByRole('button', { name: 'Play animation' })).toBeVisible();
   await expect(gl(page)).toHaveAttribute('data-animating', 'false');
@@ -139,8 +138,7 @@ test('Pause animation stops the idle animation and Play starts it again', async 
   await page.waitForTimeout(700);
   expect(await frames(page)).toBe(b); // nothing is drawn while paused
   await page.getByRole('button', { name: 'Play animation' }).click();
-  await page.waitForTimeout(600);
-  expect(await frames(page)).toBeGreaterThan(b);
+  await expect.poll(() => frames(page), { timeout: 10000 }).toBeGreaterThan(b);
 });
 
 test.describe('reduced motion', () => {
@@ -198,7 +196,7 @@ test('Reduce motion button: pressed state, saved, turns off transitions and idle
 });
 
 test('feedback entrances are short and staggered', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
   await page.getByRole('button', { name: 'Continue to build the call' }).click();
   await page.getByRole('button', { name: 'Make the call' }).click();
@@ -222,7 +220,7 @@ test('falls back to 2D with a visible note when WebGL is unavailable', async ({ 
       return orig.call(this, type, ...rest);
     };
   });
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
   await expect(page.getByRole('heading', { name: 'Assess the patient' })).toBeFocused();
   await expect(frame(page)).toHaveAttribute('data-view', '2d');

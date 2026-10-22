@@ -11,7 +11,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'npx http-server . -p 4318 -c-1 --silent',
-    url: 'http://localhost:4318/index.html',
+    url: 'http://localhost:4318/standard.html',
     reuseExistingServer: false,
   },
 });

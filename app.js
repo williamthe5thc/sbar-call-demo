@@ -89,7 +89,7 @@ function showIntro({ focus = false } = {}) {
       <li>Try again until all four are met. There is no time limit and no grade.</li>
     </ol>
     <div class="btn-row"><button type="button" class="btn" data-act="start">Start</button></div>
-    <p class="step-note"><a href="scene1.html">Try the immersive version (beta)</a>: walk around the patient's room in first person, then go to the nurses' station and make the call.</p>`,
+    <p class="step-note"><a href="index.html">Switch to the immersive 3D version</a>: walk around the patient's room in first person, then go to the nurses' station and make the call.</p>`,
   // Don't steal focus on first load: the skip link and page start should come first.
   { focus, rawTitle: focus ? undefined : 'The 2 a.m. Call | SBAR practice' });
 }

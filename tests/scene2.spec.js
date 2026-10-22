@@ -11,7 +11,7 @@ const REQUIRED = 'SBAR'.split('').flatMap((k) => ids(k, (s) => s.kind === 'requi
 const FAILING = ['s1', 's4', 'b1', 'a1', 'r4']; // opens correctly, but misses items, adds noise and has no request
 
 async function load(page) {
-  await page.goto('/scene1.html');
+  await page.goto('/index.html');
   await expect(page.locator('body')).toHaveAttribute('data-world', 'ready', { timeout: 90000 });
   await expect(page.locator('#start-btn')).not.toHaveAttribute('aria-disabled', 'true');
 }
@@ -136,7 +136,7 @@ test('keyboard only: scene 1 start, call fails, retry, mastery', async ({ page }
   await expect(page.locator('#ms-history')).toContainText('1 of 4');
   await expect(page.locator('#ms-history')).toContainText('4 of 4');
   await tabTo(page, '#reflection');
-  await expect(page.locator('#ms-standard')).toHaveAttribute('href', 'index.html');
+  await expect(page.locator('#ms-standard')).toHaveAttribute('href', 'standard.html');
   await expect(page.getByRole('button', { name: 'Start over' })).toBeVisible();
 });
 
@@ -302,7 +302,7 @@ test('Objects nearby is a compact toggle, collapsed by default, with the count',
 test('scoring parity: the standard and immersive versions give identical results', async ({ page }) => {
   const sets = [FAILING, REQUIRED, REQUIRED.filter((id) => id !== 'r3'), ['s4', 'b4', 'a4', 'r5'], []];
   const readStd = async (list) => {
-    await page.goto('/index.html');
+    await page.goto('/standard.html');
     await page.getByRole('button', { name: 'Start' }).click();
     await page.getByRole('button', { name: 'Continue to build the call' }).click();
     for (const id of list) await page.locator(`#cb-${id}`).check();

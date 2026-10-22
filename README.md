@@ -6,7 +6,12 @@ An accessible, competency-based SBAR handoff simulation. A learner examines a fi
 
 All clinical values are placeholders. Plain HTML, CSS and vanilla JS (ES modules). No build step, no CDNs, no audio. The one runtime library is a vendored copy of Three.js, used only by the optional 3D view.
 
-## Flow
+## Two versions
+
+- **Immersive 3D (the default, `index.html`):** a full-window, first-person version. It is what opens at the site address.
+- **Standard 2D (`standard.html`):** the same patient, findings, call and scoring in a plain page layout, for older computers, screen magnifiers or anyone who prefers it. Each version links to the other ("Standard 2D version" in the immersive title bar; "Immersive 3D version" in the standard header). If the browser cannot start WebGL, the immersive page says so and links to the standard version.
+
+## Flow (standard version)
 
 Intro, Assess the patient, Build the call, Feedback, Mastery. On the assess step the learner selects objects in a bedside scene (monitor, drain, urine bag, pumps, dressing, chart and more), in 3D or 2D. Each finding they open is added to "Your assessment notes", which come back on the build step.
 
@@ -23,7 +28,7 @@ The 3D canvas is decorative; every finding is still text on the page. See `DESIG
 
 ## Immersive version (beta): scene 1 and scene 2
 
-`scene1.html` is a full-window, first-person 3D version of the whole call, as two scenes on one page (a small state machine: start, scene 1, walk, scene 2, call, feedback, mastery). The page title and the visible scene label change with each scene. Open it from the link on the intro of the standard version ("Try the immersive version (beta)"), or go to `http://localhost:4318/scene1.html` after `npm start`.
+`index.html` is a full-window, first-person 3D version of the whole call, as two scenes on one page (a small state machine: start, scene 1, walk, scene 2, call, feedback, mastery). The page title and the visible scene label change with each scene. It is the default page: go to `http://localhost:4318/` after `npm start`. The standard version is at `standard.html`.
 
 How to play it from start to finish:
 

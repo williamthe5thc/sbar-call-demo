@@ -287,7 +287,7 @@ textarea { width: 100%; font: inherit; color: var(--text); background: var(--btn
 /* Mastery: the call is over, so the phone button goes away, and the docked
    record sits below the title instead of covering it. */
 body[data-phase="mastery"] #pickup { display: none; }
-@media (min-width: 720px) { .modal.dock { padding-top: 76px; } }
+@media (min-width: 720px) { .modal.dock { padding-top: 76px; } .modal.dock .sheet { max-height: calc(100dvh - 88px); } }
 
 /* Focus inside panels that clip their contents: draw the ring inside the button. */
 .ph-btn:focus-visible, .obtn:focus-visible { outline-offset: -5px; box-shadow: inset 0 0 0 2px var(--focus-halo); }

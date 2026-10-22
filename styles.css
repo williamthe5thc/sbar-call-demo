@@ -207,7 +207,9 @@ html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-mo
 .criteria li { animation: rise .32s ease-out both; animation-delay: calc(var(--i, 0) * 80ms); }
 .bubble { animation: pop .36s ease-out .15s both; }
 
+.switch-link { margin-left: auto; min-height: 44px; display: inline-flex; align-items: center; padding: .25rem .9rem; text-decoration: none; }
 .motion-btn { margin-left: auto; min-height: 44px; min-width: 44px; padding: .25rem .9rem; }
+.switch-link + .motion-btn { margin-left: 0; }
 .motion-btn[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
 .motion-btn[aria-pressed="true"]::before { content: "\2713\00a0"; content: "\2713\00a0" / ""; } /* the check is not part of the name */
 

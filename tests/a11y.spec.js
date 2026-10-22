@@ -6,7 +6,7 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'];
 const scan = async (page, heading) => {
   // Steps swap inside a short View Transition and some content fades in, so wait for
   // the new step's heading and for animations to finish before scanning.
-  if (heading) await expect(page.getByRole('heading', { name: heading })).toBeFocused();
+  if (heading) await expect(page.getByRole('heading', { name: heading })).toBeFocused({ timeout: 20000 }); // the 3D room can take a while to start in software WebGL
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
   const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
   expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(' | ')}`)).toEqual([]);
@@ -17,7 +17,7 @@ const pick = async (page, list) => { for (const id of list) await page.locator(`
 const required = (key) => ids(key, (s) => s.kind === 'required');
 const passing = async (page) => { for (const k of 'SBAR') await pick(page, required(k)); };
 const toBuild = async (page) => {
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
   await page.getByRole('button', { name: 'Continue to build the call' }).click();
 };
@@ -39,7 +39,7 @@ for (const scheme of ['light', 'dark']) {
     test('every step', async ({ page }) => {
       // Many full-page scans with software WebGL (SwiftShader) in CI; give it room.
       test.setTimeout(120_000);
-      await page.goto('/index.html');
+      await page.goto('/standard.html');
       await scan(page); // intro
       await page.getByRole('button', { name: 'Start' }).click();
       await scan(page, 'Assess the patient'); // assess, no panel
@@ -92,7 +92,7 @@ test('move buttons keep focus and announce position', async ({ page }) => {
 });
 
 test('keyboard only: complete to mastery', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   const tabTo = async (locator) => {
     for (let i = 0; i < 80; i++) {
       if (await locator.evaluate((el) => el === document.activeElement).catch(() => false)) return;
@@ -140,7 +140,7 @@ test('reflows at 320px on every step', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   const fits = async () =>
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.goto('/index.html'); await fits();
+  await page.goto('/standard.html'); await fits();
   await page.getByRole('button', { name: 'Start' }).click(); await fits();
   expect(await page.locator('.hotspots').evaluate((e) => getComputedStyle(e).position)).toBe('static'); // list layout
   for (const h of HS) {
@@ -171,7 +171,7 @@ test('illustrations: decorative SVGs are hidden, monitor is named, provider mood
       els.filter((e) => e.getAttribute('aria-hidden') !== 'true' || e.getAttribute('focusable') !== 'false').length);
     expect(bad).toBe(0);
   };
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await expect(page.locator('#app svg[aria-hidden="true"]')).toHaveCount(1); // intro
   await decorativeOk();
   await page.getByRole('button', { name: 'Start' }).click();
@@ -218,7 +218,7 @@ test('provider is unsure when two or three criteria are met', async ({ page }) =
 });
 
 test('hotspots: names match labels, panel wiring, notes, all-findings list', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
   await expect(page.locator('#none-note')).toBeVisible();
   const drain = page.getByRole('button', { name: 'Surgical drain', exact: true });
@@ -244,7 +244,7 @@ test('hotspots: names match labels, panel wiring, notes, all-findings list', asy
 
 test('read aloud: highlights each sentence, toggles label, stops on step change', async ({ page }) => {
   await page.addInitScript(mockSpeech);
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
   await page.getByRole('button', { name: 'Surgical drain', exact: true }).click();
   const drain = HS.find((h) => h.id === 'drain');
@@ -271,7 +271,7 @@ test('read aloud: highlights each sentence, toggles label, stops on step change'
 
 test('read aloud buttons are hidden when speech is unsupported', async ({ page }) => {
   await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true }); });
-  await page.goto('/index.html');
+  await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
   await page.getByRole('button', { name: 'Chart', exact: true }).click();
   await expect(page.getByRole('button', { name: /Read aloud/ })).toHaveCount(0);

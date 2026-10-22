@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The 2 a.m. Call | SBAR practice</title>
+  <meta name="description" content="An accessible, competency-based SBAR handoff simulation. Personal portfolio demo with a fictional patient.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <!-- Decorative: a desk lamp and phone at a night nurses' station. -->
+      <svg class="header-art" aria-hidden="true" focusable="false" viewBox="0 0 120 80" width="96" height="64">
+        <rect x="4" y="62" width="112" height="8" rx="2" fill="currentColor" opacity=".35"/>
+        <path d="M20 62 L32 30 L52 22" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+        <path d="M46 18 L66 30 L52 40 Z" fill="currentColor"/>
+        <rect x="74" y="44" width="34" height="18" rx="4" fill="currentColor"/>
+        <path d="M76 44 Q91 30 106 44" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="96" cy="8" r="5" fill="currentColor" opacity=".6"/>
+      </svg>
+      <div>
+        <h1>The 2 a.m. Call</h1>
+        <p class="tagline">Practice an SBAR call to a provider</p>
+      </div>
+      <a class="small-btn switch-link" href="index.html">Immersive 3D version</a>
+      <button type="button" id="motion-toggle" class="small-btn motion-btn" aria-pressed="false">Reduce motion</button>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <noscript>
+      <p class="notice">This simulation needs JavaScript. Please enable it, or open this page in a browser that supports it.</p>
+    </noscript>
+    <div id="app"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p class="label">Personal portfolio demo. Fictional patient. Clinical content requires review by a nursing subject matter expert.</p>
+    </div>
+  </footer>
+
+  <!-- One live region, reused for every announcement. -->
+  <div id="live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
