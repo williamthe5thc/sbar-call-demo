@@ -220,7 +220,7 @@ test('provider is unsure when two or three criteria are met', async ({ page }) =
 test('hotspots: names match labels, panel wiring, notes, all-findings list', async ({ page }) => {
   await page.goto('/standard.html');
   await page.getByRole('button', { name: 'Start' }).click();
-  await expect(page.locator('#none-note')).toBeVisible();
+  await expect(page.locator('#none-note')).toBeVisible({ timeout: 20000 }); // the 3D room can take a while to start in software WebGL
   const drain = page.getByRole('button', { name: 'Surgical drain', exact: true });
   await expect(drain).toHaveAttribute('aria-controls', 'finding-panel');
   await expect(page.locator('#finding-panel')).toHaveAttribute('aria-live', 'off');
