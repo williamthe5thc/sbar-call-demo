@@ -18,6 +18,12 @@ async function begin(page) {
   await load(page);
   await page.locator('#start-btn').click();
   await expect(page.locator('#scene-heading')).toBeFocused();
+  await openObjects(page);
+}
+// "Objects nearby" starts collapsed (the room fills the screen); most tests want the list open.
+async function openObjects(page) {
+  if ((await page.locator('#objects-btn').getAttribute('aria-expanded')) !== 'true') await page.locator('#objects-btn').click();
+  await expect(page.locator('#objects-body')).toBeVisible();
 }
 const settle = (page) => page.waitForFunction(() => document.querySelector('#view').dataset.moving === 'false', null, { timeout: 30000 });
 const pose = (page) => view(page).evaluate((el) => ({ x: +el.dataset.x, z: +el.dataset.z, yaw: +el.dataset.yaw, pitch: +el.dataset.pitch, spot: el.dataset.spot }));
@@ -41,6 +47,7 @@ for (const scheme of ['light', 'dark']) {
     await axe(page); // start screen
     await page.locator('#start-btn').click();
     await expect(page.locator('#scene-heading')).toBeFocused();
+    await openObjects(page);
     await page.locator('.obtn[data-id="drain"]').click();
     await expect(page.locator('#card')).toBeVisible();
     await expect(page.locator('#card-title')).toHaveText('Surgical drain');
@@ -105,6 +112,8 @@ test('keyboard only: Start, Go to buttons, bedside, examine three objects, open 
   await expect(view(page)).toHaveAttribute('data-spot', 'bedleft');
   await settle(page);
   await expect(page.locator('#goto-list [data-spot="bedleft"]')).toHaveAttribute('aria-current', 'location');
+  await tabTo(page, '#objects-btn'); // collapsed by default: a real button opens the list
+  await page.keyboard.press('Enter');
   for (const id of ['skin', 'abdomen', 'ivsite']) {
     await tabTo(page, `.obtn[data-id="${id}"]`);
     await page.keyboard.press('Enter');
@@ -121,7 +130,7 @@ test('keyboard only: Start, Go to buttons, bedside, examine three objects, open 
   await expect(page.locator('#end')).toBeVisible();
   await expect(page.locator('#end-title')).toBeFocused();
   await expect(page.locator('#end')).toContainText("Scene 1 complete");
-  await expect(page.locator('#end')).toContainText("Next: walk to the nurses' station and make the call (coming next).");
+  await expect(page.locator('#end')).toContainText("Next: walk to the nurses' station and make the call to the on-call provider.");
   expect(await page.title()).toContain('Scene 1 complete');
 });
 
@@ -241,9 +250,11 @@ test('the overlays never cover each other, at desktop and phone sizes', async ({
   await page.waitForTimeout(300);
   await check();
   await page.locator('#goto-toggle').click();
+  await page.waitForTimeout(300); // let the stacked layout settle
   await check();
   await page.setViewportSize({ width: 1024, height: 600 });
   await page.locator('#goto-toggle').evaluate((b) => b.getAttribute('aria-expanded')); // wide again: the bar is always shown
+  await page.waitForTimeout(300);
   await check();
 });
 

@@ -21,9 +21,23 @@ The assess step opens in a 3D bedside room when the browser supports WebGL, and 
 
 The 3D canvas is decorative; every finding is still text on the page. See `DESIGN_NOTES.md`.
 
-## Immersive version (beta), scene 1
+## Immersive version (beta): scene 1 and scene 2
 
-`scene1.html` is a full-window, first-person 3D version of the bedside assessment (scene 1 only). Open it from the link on the intro of the standard version ("Try the immersive version (beta)"), or go to `http://localhost:4318/scene1.html` after `npm start`. Choose a movement style on the start screen (jump between spots, or smooth walking), then look around by dragging or with the Turn and Look buttons, move with the Go to buttons or the arrow keys or W A S D while the 3D view has focus (Q and E turn), and select objects in the room or in "Objects nearby" to examine them. "I'm ready to call the provider" ends the scene and offers "Continue in the standard version", which opens the Build step with your notes (passed through `sessionStorage`). Files: `scene1.js` (page and input), `world1.js` (3D world, camera, collision), `room1.js` (room, hallway and procedural textures), `scene1.css`. See `DESIGN_NOTES.md`, "Immersive scene 1".
+`scene1.html` is a full-window, first-person 3D version of the whole call, as two scenes on one page (a small state machine: start, scene 1, walk, scene 2, call, feedback, mastery). The page title and the visible scene label change with each scene. Open it from the link on the intro of the standard version ("Try the immersive version (beta)"), or go to `http://localhost:4318/scene1.html` after `npm start`.
+
+How to play it from start to finish:
+
+1. **Start screen.** Choose a movement style (jump between spots, or smooth walking) and press Start.
+2. **Scene 1, the bedside (2 a.m., lamp-lit room).** Look around by dragging or with the Turn and Look buttons, move with the Go to buttons or the arrow keys or W A S D while the 3D view has focus (Q and E turn). Select objects in the room, or open "Objects nearby (10)" (collapsed by default) and choose one. What you examine goes into Notes (also collapsed by default). Escape closes the topmost panel and returns focus to its button.
+3. Choose **I'm ready to call the provider**, then **Walk to the nurses' station**. The camera walks down the hallway (a cut when Reduce motion is on; "Skip walk" cuts it too).
+4. **Scene 2, the nurses' station.** Go to buttons: Room 12 doorway, Hallway, Nurses' station, Phone. Pick up the phone with the "Pick up the phone" button, the Phone marker, or by clicking the phone.
+5. **Phone notepad.** The on-call provider's card is at the top. Tick statements in each SBAR section, reorder with Move up and Move down, and use the side section for your notes and the chart. "Make the call" starts the call; "Put the phone down" (or Escape) goes back to the station and keeps your choices.
+6. **The call.** Your statements play as captions in a transcript, then the provider replies, with their mood on the portrait and in words. Captions advance on their own (about 330 ms per word); Pause captions, Next caption and Show all are available; with Reduce motion on, everything appears at once. "Voice: off" turns on optional speech (off by default). Then "See feedback".
+7. **Feedback.** The four criteria with Met / Not yet and hints. If not all are met, "Hang up and try again" returns to the notepad with your selections kept. When all four are met, "Continue to Room 12": the camera walks back, the provider arrives at the doorway, and "Evidence of mastery" shows your attempt history, the final SBAR call and an optional reflection. "Start over" restarts the immersive version; "Open the standard version" goes to `index.html`.
+
+Files: `scene1.js` (page controller, scenes, input), `scene2.js` (phone, call, feedback, mastery), `scoring.js` (the scoring rules, shared with the standard version's `app.js`), `world1.js` (3D world, camera, collision, lighting), `room1.js` (room shell and textures), `station.js` (hallway, nurses' station, EHR screen, provider figure), `scene1.css`. See `DESIGN_NOTES.md`, "Immersive scenes 1 and 2".
+
+Tests: `npx playwright test` runs everything; `tests/scene2.spec.js` covers scene 2 (axe light and dark, keyboard-only run, captions, voice, reduced motion, Escape, scoring parity, 320 px).
 
 ## Three.js (vendored)
 

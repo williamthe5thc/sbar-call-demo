@@ -4,6 +4,7 @@ import { scenario } from './scenario.js';
 import { introScene, monitorFigure, nurseStationScene, providerScene, sunriseScene, assessSvg, MOODS, moodFor } from './illustrations.js';
 import { supported as speechSupported, toggleReading, stopReading } from './readaloud.js';
 import { initMotion, transition } from './motion.js';
+import { score, byId, secName } from './scoring.js';
 import { mountAssessView, unmountAssessView, selectInView } from './assessview.js';
 
 const app = document.getElementById('app');
@@ -19,71 +20,8 @@ const state = {
 };
 const hotspotById = Object.fromEntries(scenario.assessment.map((h) => [h.id, h]));
 
-// Look-up table: id -> statement, remembering which section it is shown in.
-const byId = {};
-for (const sec of scenario.sections) {
-  for (const s of sec.statements) byId[s.id] = { ...s, shownIn: sec.key };
-}
-const secName = (key) => scenario.sections.find((s) => s.key === key).name;
-const fill = (tpl, vars) => tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k]);
+// Scoring lives in scoring.js, shared with the immersive version.
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-/* ---------- Scoring: deterministic rules, no randomness ---------- */
-
-function score(sel) {
-  const chosen = (key) => sel[key].map((id) => byId[id]);
-  const total = Object.values(sel).reduce((n, ids) => n + ids.length, 0);
-  const C = Object.fromEntries(scenario.criteria.map((c) => [c.id, c]));
-  const results = [];
-
-  // Organization: every section has something, nothing is in the wrong section,
-  // and the opening line (the statement marked `lead`) comes first.
-  const orgTips = [];
-  for (const sec of scenario.sections) {
-    const items = chosen(sec.key);
-    if (!items.length) orgTips.push(fill(C.organization.emptySectionTip, { section: sec.name }));
-    for (const s of items) {
-      if (s.belongsIn) orgTips.push(fill(C.organization.misplacedTip, { text: s.text, section: secName(s.belongsIn) }));
-    }
-    const lead = items.find((s) => s.lead);
-    if (lead && items[0] !== lead) orgTips.push(fill(C.organization.orderTip, { section: sec.name, first: lead.text }));
-  }
-  results.push(total === 0
-    ? { id: 'organization', met: false, tips: [C.organization.emptyTip] }
-    : { id: 'organization', met: orgTips.length === 0, tips: orgTips });
-
-  // Completeness: every required statement is selected.
-  const missing = [];
-  for (const sec of scenario.sections) {
-    for (const s of sec.statements) {
-      if (s.kind === 'required' && !sel[sec.key].includes(s.id)) {
-        missing.push(fill(C.completeness.missingTip, { section: sec.name, hint: s.hint }));
-      }
-    }
-  }
-  results.push({ id: 'completeness', met: missing.length === 0, tips: missing });
-
-  // Prioritization: no irrelevant distractors. (Misplaced real content is an Organization issue.)
-  const noise = Object.keys(sel).flatMap(chosen).filter((s) => s.kind === 'distractor' && !s.belongsIn);
-  results.push(total === 0
-    ? { id: 'prioritization', met: false, tips: [C.prioritization.emptyTip] }
-    : { id: 'prioritization', met: noise.length === 0, tips: noise.map((s) => fill(C.prioritization.distractorTip, { text: s.text, why: s.why })) });
-
-  // Clear request: Recommendation has a specific request AND a time frame.
-  const rec = chosen('R');
-  const reqTips = [];
-  if (!rec.some((s) => s.request)) reqTips.push(C.request.noRequestTip);
-  if (!rec.some((s) => s.timeFrame)) reqTips.push(C.request.noTimeTip);
-  results.push({ id: 'request', met: reqTips.length === 0, tips: reqTips });
-
-  const metCount = results.filter((r) => r.met).length;
-  // Provider reply branches on how many criteria were met.
-  let reply;
-  if (metCount === 4) reply = scenario.replies.success;
-  else if (metCount >= 2) reply = scenario.replies.clarify[results.find((r) => !r.met).id]; // first unmet
-  else reply = scenario.replies.confused;
-  return { results, metCount, reply };
-}
 
 /* ---------- Rendering helpers ---------- */
 
@@ -151,7 +89,7 @@ function showIntro({ focus = false } = {}) {
       <li>Try again until all four are met. There is no time limit and no grade.</li>
     </ol>
     <div class="btn-row"><button type="button" class="btn" data-act="start">Start</button></div>
-    <p class="step-note"><a href="scene1.html">Try the immersive version (beta)</a>: walk around the patient's room in first person. Scene 1 only, the bedside assessment.</p>`,
+    <p class="step-note"><a href="scene1.html">Try the immersive version (beta)</a>: walk around the patient's room in first person, then go to the nurses' station and make the call.</p>`,
   // Don't steal focus on first load: the skip link and page start should come first.
   { focus, rawTitle: focus ? undefined : 'The 2 a.m. Call | SBAR practice' });
 }

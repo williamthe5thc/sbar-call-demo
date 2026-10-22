@@ -7,10 +7,10 @@ import { canvasTex, rng, std } from './scene3d.js';
 
 export const ROOM = { x0: -3.6, x1: 3.6, z0: -1.45, z1: 4.0, h: 2.8 };
 export const DOOR = { x0: 1.7, x1: 2.7, h: 2.1 };
-export const HALL = { x0: -5, x1: 5, z0: 4.0, z1: 6.6 };
+export const HALL = { x0: -6, x1: 6, z0: 4.0, z1: 8.0 };
 
-const repeat = (t, x, y) => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(x, y); t.anisotropy = 8; return t; };
-const lightBox = (p, w, h, d, mat, x, y, z) => {
+export const repeat = (t, x, y) => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(x, y); t.anisotropy = 8; return t; };
+export const lightBox = (p, w, h, d, mat, x, y, z) => {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
   m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; p.add(m); return m;
 };
@@ -135,13 +135,13 @@ export function fabricTexture({ pleats = 0, twill = false, seed = 71 } = {}) {
   }).tex;
 }
 
-const glowTexture = () => canvasTex(128, 128, (g, w) => {
+export const glowTexture = () => canvasTex(128, 128, (g, w) => {
   const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
   gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = gr; g.fillRect(0, 0, w, w);
 }).tex;
 
-function labelTexture(w, h, bg, fg, text, size) {
+export function labelTexture(w, h, bg, fg, text, size) {
   return canvasTex(w, h, (g) => {
     g.fillStyle = bg; g.fillRect(0, 0, w, h);
     g.fillStyle = fg; g.font = `700 ${size}px system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -149,17 +149,7 @@ function labelTexture(w, h, bg, fg, text, size) {
   }).tex;
 }
 
-function deskScreenTexture(seed) {
-  return canvasTex(256, 160, (g, w, h) => {
-    const r = rng(seed);
-    g.fillStyle = '#0d2233'; g.fillRect(0, 0, w, h);
-    g.fillStyle = '#1d5d8a'; g.fillRect(0, 0, w, 16);
-    for (let i = 0; i < 7; i++) { g.fillStyle = r() > 0.5 ? '#9ed1f0' : '#5aa0cc'; g.fillRect(12, 28 + i * 18, 40 + r() * 150, 7); }
-    g.fillStyle = '#e9c46a'; g.fillRect(w - 60, 30, 46, 46);
-  }).tex;
-}
-
-function whiteboardTexture() {
+export function whiteboardTexture() {
   return canvasTex(256, 144, (g, w, h) => {
     const r = rng(9);
     g.fillStyle = '#f5f7f9'; g.fillRect(0, 0, w, h);
@@ -265,72 +255,6 @@ export function buildShell(scene) {
   lightBox(hinge, 0.2, 0.3, 0.012, std(0x1c3550, { roughness: 0.4 }), -0.42, 1.55, 0.03); // small view panel on the door
 
   return { hallPaint };
-}
-
-/* ---------- hallway and nurses' station (visible through the door, not reachable in scene 1) ---------- */
-
-export function buildHallway(scene) {
-  const hallWood = std(0xffffff, { map: woodTexture('#b99a6c', 81), roughness: 0.4 });
-  const teal = std(0x477a83, { roughness: 0.5 });
-  const dark = std(0x26303d, { roughness: 0.6 });
-  const metal = std(0xc3cfdd, { roughness: 0.32, metalness: 0.85 });
-  const z = HALL.z1;
-  const stationX = 2.1;
-
-  // Ceiling lights in the hallway: on, cool white, simple emissive panels
-  const lit = new THREE.MeshBasicMaterial({ color: 0xe9f5ff, toneMapped: false });
-  for (const [x, zz] of [[0.4, 5.0], [3.6, 5.0], [-2.8, 5.0]]) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.03, 0.45), lit); m.position.set(x, ROOM.h - 0.015, zz); scene.add(m);
-  }
-
-  // Counter (transaction top toward the hallway), desk, chair, screens, lamp, phone
-  const grp = new THREE.Group(); scene.add(grp);
-  lightBox(grp, 3.6, 1.06, 0.1, teal, stationX, 0.53, 5.7);                // front panel
-  lightBox(grp, 3.7, 0.05, 0.55, hallWood, stationX, 1.085, 5.82);          // counter top
-  lightBox(grp, 0.1, 1.06, 0.9, teal, stationX - 1.8, 0.53, 6.1);           // end panels
-  lightBox(grp, 0.1, 1.06, 0.9, teal, stationX + 1.8, 0.53, 6.1);
-  lightBox(grp, 3.4, 0.04, 0.7, hallWood, stationX, 0.75, 6.2);             // desk
-  lightBox(grp, 0.5, 0.72, 0.6, dark, stationX + 1.45, 0.38, 6.2);          // drawers
-  // Screens turned a little toward the hallway
-  for (const [dx, ry, seed] of [[-0.55, 0.35, 3], [0.45, -0.35, 5]]) {
-    const s = new THREE.Group(); s.position.set(stationX + dx, 1.0, 6.18); s.rotation.y = Math.PI + ry; grp.add(s);
-    lightBox(s, 0.52, 0.34, 0.03, dark, 0, 0, 0);
-    const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.28), new THREE.MeshBasicMaterial({ map: deskScreenTexture(seed), toneMapped: false }));
-    scr.position.set(0, 0, 0.017); s.add(scr);
-    lightBox(s, 0.05, 0.18, 0.04, metal, 0, -0.22, -0.02);
-  }
-  lightBox(grp, 0.4, 0.015, 0.14, dark, stationX - 0.1, 0.77, 5.95);        // keyboard
-  lightBox(grp, 0.2, 0.08, 0.18, std(0xe9eff6), stationX + 1.05, 0.8, 6.0);   // phone
-  lightBox(grp, 0.2, 0.03, 0.05, std(0xdde4ee), stationX + 1.05, 0.865, 6.0);
-  // Desk lamp
-  const lampBulb = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffe2b0, toneMapped: false }));
-  lampBulb.position.set(stationX - 1.3, 1.02, 6.0); grp.add(lampBulb);
-  lightBox(grp, 0.1, 0.02, 0.1, metal, stationX - 1.3, 0.78, 6.15);
-  lightBox(grp, 0.02, 0.26, 0.02, metal, stationX - 1.3, 0.91, 6.15);
-  lightBox(grp, 0.16, 0.04, 0.14, std(0xe8d8b8, { emissive: 0x6a5632 }), stationX - 1.3, 1.03, 6.05);
-  // Chair
-  const chair = new THREE.Group(); chair.position.set(stationX - 0.1, 0, 6.2 - 0.0); grp.add(chair);
-  lightBox(chair, 0.46, 0.07, 0.46, std(0x1d3a5c, { roughness: 0.8 }), 0, 0.5, -0.35);
-  lightBox(chair, 0.44, 0.5, 0.07, std(0x1d3a5c, { roughness: 0.8 }), 0.0, 0.8, -0.58);
-  lightBox(chair, 0.04, 0.4, 0.04, metal, 0, 0.27, -0.35);
-  for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5; lightBox(chair, 0.3, 0.025, 0.035, metal, Math.sin(a) * 0.14, 0.05, -0.35 + Math.cos(a) * 0.14).rotation.y = a; }
-  // Wall behind: whiteboard, clock, sign
-  lightBox(grp, 1.5, 0.84, 0.03, std(0xffffff, { map: whiteboardTexture(), roughness: 0.35 }), stationX - 0.9, 1.7, z - 0.03);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.26), new THREE.MeshBasicMaterial({ map: labelTexture(512, 84, '#16314f', '#f3f7fb', "NURSES' STATION", 46), toneMapped: false }));
-  sign.position.set(stationX + 0.8, 2.3, z - 0.02); sign.rotation.y = Math.PI; grp.add(sign);
-  const clock = new THREE.Mesh(new THREE.CircleGeometry(0.15, 32), new THREE.MeshBasicMaterial({ color: 0xf1f4f7 }));
-  clock.position.set(stationX + 1.45, 1.8, z - 0.02); clock.rotation.y = Math.PI; grp.add(clock);
-  // Medication cart in the hallway
-  const cart = new THREE.Group(); cart.position.set(-0.9, 0, 5.1); grp.add(cart);
-  lightBox(cart, 0.7, 0.8, 0.45, std(0xd9e1ea, { roughness: 0.4 }), 0, 0.5, 0);
-  lightBox(cart, 0.72, 0.03, 0.47, metal, 0, 0.92, 0);
-  for (let i = 0; i < 4; i++) lightBox(cart, 0.6, 0.15, 0.01, std(i % 2 ? 0x5a8fcf : 0x2e9e5b, { roughness: 0.4 }), 0, 0.22 + i * 0.18, 0.226);
-  // Hallway handrail along the far wall and a green exit sign
-  lightBox(grp, 5.5, 0.05, 0.05, std(0xcfb99a, { roughness: 0.5 }), stationX - 3.2, 0.95, z - 0.06);
-  const exit = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.16), new THREE.MeshBasicMaterial({ map: labelTexture(256, 100, '#0d6b36', '#ffffff', 'EXIT', 54), toneMapped: false }));
-  exit.position.set(-3.5, 2.5, z - 0.02); exit.rotation.y = Math.PI; grp.add(exit);
-
-  return { stationX, group: grp };
 }
 
 /* ---------- soft glows (sprites, no bloom pass) ---------- */

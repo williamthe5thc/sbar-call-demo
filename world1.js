@@ -6,7 +6,8 @@ import * as THREE from './vendor/three/three.module.min.js';
 import { RoomEnvironment } from './vendor/three/RoomEnvironment.js';
 import { buildRoom } from './scene3d.js';
 import { monitorData } from './illustrations.js';
-import { ROOM, buildShell, buildHallway, addGlow, upgradeSurfaces } from './room1.js';
+import { ROOM, DOOR, HALL, buildShell, addGlow, upgradeSurfaces } from './room1.js';
+import { STATION, buildHallway, buildProvider, poseWalk } from './station.js';
 
 export const EYE = 1.6; // metres: standing eye height
 const R = 0.28; // body radius used for collision
@@ -23,6 +24,14 @@ export const SPOTS = {
   window: { label: 'Window', x: 1.5, z: 0.8, look: [1.5, 1.6, -1.45] },
 };
 
+// Scene 2: the walk to the nurses' station and the call.
+export const SPOTS2 = {
+  room12: { label: 'Room 12 doorway', x: 2.2, z: 3.55, look: [2.2, 1.4, 6.4] },
+  hall: { label: 'Hallway', x: 0.0, z: 4.9, look: [2.8, 1.2, 6.6] },
+  station: { label: "Nurses' station", x: 1.9, z: 6.3, look: [3.0, 1.15, 7.8] },
+  phone: { label: 'Phone', x: 3.4, z: 6.55, look: [3.55, 0.78, 7.5] },
+};
+
 // Where you stand to examine each object: a spot, and how close (metres, along the floor) to get.
 const STANCE = {
   ivpump: ['ivpole', 1.4], pca: ['ivpole', 1.2], skin: ['bedleft', 1.5], monitor: ['monitor', 1.6],
@@ -31,33 +40,59 @@ const STANCE = {
 };
 // How far from the anchor a click can land and still count as that object.
 // Markers sit a little above these objects so they do not cover what you are looking at.
-const LIFT = { monitor: 0.34 };
-const PICK_RADIUS = { monitor: 0.5, skin: 0.42, abdomen: 0.38, chart: 0.34, ivpump: 0.3, pca: 0.3 };
+const LIFT = { monitor: 0.34, phone: 0.32 };
+const PICK_RADIUS = { phone: 0.34, monitor: 0.5, skin: 0.42, abdomen: 0.38, chart: 0.34, ivpump: 0.3, pca: 0.3 };
 
 /* ---------- collision (floor plan, metres) ---------- */
 
 // [x0, z0, x1, z1] of furniture the camera must stay out of. The bed, the overbed table,
 // the IV pole base, the PCA stand and the privacy curtain.
-const OBSTACLES = [
+const grow = (list) => list.map(([a, b, c, d]) => [a - R, b - R, c + R, d + R]);
+const OBSTACLES = grow([
   [-1.15, -1.05, 1.15, -0.05],
   [1.05, -0.35, 2.0, 0.35],
   [-1.85, -0.4, -1.25, 0.2],
   [-1.3, 0.13, -0.95, 0.47],
   [-3.05, -0.9, -2.05, -0.8],
-].map(([a, b, c, d]) => [a - R, b - R, c + R, d + R]);
+]);
+// Scene 2 adds the counter, the station's side panel, the desk, the chair and the cart.
+const OBSTACLES2 = OBSTACLES.concat(grow([
+  STATION.counter, STATION.sidePanel, STATION.desk,
+  [STATION.chair.x - 0.3, STATION.chair.z - 0.3, STATION.chair.x + 0.3, STATION.chair.z + 0.3],
+  STATION.cart,
+]));
 const B = { x0: ROOM.x0 + R, x1: ROOM.x1 - R, z0: ROOM.z0 + R, z1: ROOM.z1 - R };
+// Scene 2 can walk the room, through the door, and along the hallway: three rectangles.
+const RECTS2 = [
+  [ROOM.x0 + R, ROOM.z0 + R, ROOM.x1 - R, ROOM.z1 - R],
+  [DOOR.x0 + R, ROOM.z1 - 0.5, DOOR.x1 - R, HALL.z0 + 0.5],
+  [HALL.x0 + R, HALL.z0 + R, HALL.x1 - R, HALL.z1 - R],
+];
+let region = 1; // 1: the room only; 2: the room, the doorway and the hallway
+export const setRegion = (n) => { region = n; };
+const bbox = () => (region === 1 ? B : { x0: HALL.x0 + R, x1: HALL.x1 - R, z0: ROOM.z0 + R, z1: HALL.z1 - R });
 
 export function collide(x, z) {
-  x = Math.min(B.x1, Math.max(B.x0, x)); z = Math.min(B.z1, Math.max(B.z0, z));
+  const obs = region === 1 ? OBSTACLES : OBSTACLES2;
+  const snap = () => {
+    if (region === 1) { x = Math.min(B.x1, Math.max(B.x0, x)); z = Math.min(B.z1, Math.max(B.z0, z)); return; }
+    let best = null, bd = Infinity;
+    for (const [a, b, c, d] of RECTS2) {
+      const px = Math.min(c, Math.max(a, x)), pz = Math.min(d, Math.max(b, z)), dd = (px - x) ** 2 + (pz - z) ** 2;
+      if (dd < bd) { bd = dd; best = [px, pz]; }
+    }
+    [x, z] = best;
+  };
+  snap();
   for (let k = 0; k < 4; k++) {
-    for (const [a, b, c, d] of OBSTACLES) {
+    for (const [a, b, c, d] of obs) {
       if (x > a && x < c && z > b && z < d) {
         const pl = x - a, pr = c - x, pb = z - b, pf = d - z;
         const m = Math.min(pl, pr, pb, pf);
         if (m === pl) x = a; else if (m === pr) x = c; else if (m === pb) z = b; else z = d;
       }
     }
-    x = Math.min(B.x1, Math.max(B.x0, x)); z = Math.min(B.z1, Math.max(B.z0, z));
+    snap();
   }
   return [x, z];
 }
@@ -71,9 +106,10 @@ const clearLine = (a, b) => {
 // Grid A* around the furniture; then straighten with line of sight.
 export function findPath(from, to) {
   if (clearLine(from, to)) return [from, to];
-  const cs = 0.1, nx = Math.ceil((B.x1 - B.x0) / cs) + 1, nz = Math.ceil((B.z1 - B.z0) / cs) + 1;
-  const cell = (p) => [Math.round((p[0] - B.x0) / cs), Math.round((p[1] - B.z0) / cs)];
-  const pos = (i, j) => [B.x0 + i * cs, B.z0 + j * cs];
+  const BB = bbox();
+  const cs = 0.1, nx = Math.ceil((BB.x1 - BB.x0) / cs) + 1, nz = Math.ceil((BB.z1 - BB.z0) / cs) + 1;
+  const cell = (p) => [Math.round((p[0] - BB.x0) / cs), Math.round((p[1] - BB.z0) / cs)];
+  const pos = (i, j) => [BB.x0 + i * cs, BB.z0 + j * cs];
   const [si, sj] = cell(from), [gi, gj] = cell(to);
   const key = (i, j) => i * nz + j;
   const g = new Map([[key(si, sj), 0]]), prev = new Map(), open = [[0, si, sj]], done = new Set();
@@ -129,40 +165,58 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
   host.prepend(canvas);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b1424);
-  scene.fog = new THREE.FogExp2(0x0b1424, 0.045); // light haze
+  const NIGHT = 0x03060c;
+  scene.background = new THREE.Color(NIGHT);
+  scene.fog = new THREE.FogExp2(NIGHT, 0.05); // light haze
   const pm = new THREE.PMREMGenerator(renderer);
   scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.3;
+  scene.environmentIntensity = 0.06;
 
   const parts = buildRoom(scene, data, { noShell: true });
   buildShell(scene);
-  buildHallway(scene);
+  const hall3d = buildHallway(scene, chart);
   upgradeSurfaces(parts);
 
-  // Light: warm lamp, cool monitor glow, moonlight through the window, cool hallway, dim ambient
-  scene.add(new THREE.HemisphereLight(0x9fb4d8, 0x2f3544, 0.42));
-  const lamp = new THREE.SpotLight(0xffb066, 105, 10, 1.0, 0.85, 1.5);
-  lamp.position.copy(parts.lampPos); lamp.target.position.set(-0.4, 0.5, -0.4);
+  // It is 2 a.m. The overhead lights are off. What is left: a warm lamp pool at the bedside, the cool
+  // glow of the monitor, a little moonlight through the window, light spilling in from the lit hallway,
+  // and almost no ambient light, so the corners fall into the dark.
+  scene.add(new THREE.HemisphereLight(0x6f86b8, 0x151a26, 0.07));
+  const lamp = new THREE.SpotLight(0xffae5c, 120, 10, 0.95, 0.9, 1.6);
+  lamp.position.copy(parts.lampPos); lamp.target.position.set(-0.45, 0.45, -0.35);
   lamp.castShadow = true; lamp.shadow.mapSize.set(1024, 1024); lamp.shadow.bias = -0.0005; lamp.shadow.radius = 5;
   scene.add(lamp, lamp.target);
-  const lampFill = new THREE.PointLight(0xffb36b, 7, 5, 2); lampFill.position.copy(parts.lampPos).add(new THREE.Vector3(0, -0.1, 0.15)); scene.add(lampFill);
-  const glow = new THREE.PointLight(0x74b9ff, 6, 4.6, 2); glow.position.copy(parts.monitorPos); scene.add(glow);
-  const moon = new THREE.DirectionalLight(0x8eb0ff, 0.95);
+  const lampFill = new THREE.PointLight(0xffa860, 5, 3.6, 2); lampFill.position.copy(parts.lampPos).add(new THREE.Vector3(0, -0.1, 0.15)); scene.add(lampFill);
+  const glow = new THREE.PointLight(0x5fb0ff, 7, 4.2, 2); glow.position.copy(parts.monitorPos).add(new THREE.Vector3(0, -0.1, 0.35)); scene.add(glow);
+  const moon = new THREE.DirectionalLight(0x7f9fe8, 0.45);
   moon.position.set(3, 3.2, -4.2); moon.target.position.set(0.3, 0, 0.8);
   moon.castShadow = true; moon.shadow.mapSize.set(1024, 1024);
   Object.assign(moon.shadow.camera, { left: -6, right: 6, top: 5, bottom: -5, near: 0.5, far: 16 });
   moon.shadow.bias = -0.0008; moon.shadow.radius = 5;
   scene.add(moon, moon.target);
-  const hall = new THREE.SpotLight(0xdff0ff, 55, 8, 1.1, 0.9, 1.6);
-  hall.position.set(2.1, 2.7, 4.9); hall.target.position.set(1.9, 0.6, 6.4); scene.add(hall, hall.target);
+  // The lit hallway spills through the open door onto the floor (the walls cast the shadows).
+  const spill = new THREE.SpotLight(0xdcecff, 95, 10, 0.62, 0.7, 1.3);
+  spill.position.set(2.2, 2.55, 5.0); spill.target.position.set(2.15, 0, 1.9);
+  spill.castShadow = true; spill.shadow.mapSize.set(1024, 1024); spill.shadow.bias = -0.0006; spill.shadow.radius = 4;
+  spill.shadow.camera.near = 0.3; spill.shadow.camera.far = 12;
+  scene.add(spill, spill.target);
+  // The hallway itself: ceiling lights are on. Spots aim along the hallway, away from Room 12.
+  for (const [x, z, tx, tz] of [[-4.4, 5.6, -4.2, 7.0], [-1.6, 5.6, -1.4, 7.0], [1.4, 6.2, 1.6, 7.4], [3.8, 6.2, 3.4, 7.4]]) {
+    const h = new THREE.SpotLight(0xe4f2ff, 17, 8, 0.8, 0.85, 1.4);
+    h.position.set(x, 2.7, z); h.target.position.set(tx, 0.3, tz); scene.add(h, h.target);
+  }
+  // The station: a warm task light, and the cool glow of the computer.
+  const task = new THREE.PointLight(0xffb060, 5, 3.4, 2);
+  task.position.set(STATION.lamp.x + 0.25, 1.12, STATION.lamp.z - 0.1); scene.add(task);
+  const ehrGlow = new THREE.PointLight(0xa8d4ff, 3.2, 3.0, 2);
+  ehrGlow.position.set(STATION.screen.x, 1.1, STATION.screen.z - 0.7); scene.add(ehrGlow);
 
-  // Bloom-free glow: additive sprites around the lamp bulb, the monitor, the moon and the station
-  addGlow(scene, parts.lampPos.clone().add(new THREE.Vector3(0, 0, 0.0)), 0xffc27a, 0.7, 0.55);
-  addGlow(scene, new THREE.Vector3(0.15, 1.62, -1.1), 0x6fb8ff, 1.5, 0.22);
-  addGlow(scene, new THREE.Vector3(0.9, 2.1, -1.8), 0x9db8ff, 1.6, 0.25);
-  addGlow(scene, new THREE.Vector3(2.1, 2.7, 5.2), 0xcfe8ff, 2.4, 0.3);
-  addGlow(scene, new THREE.Vector3(0.8, 1.05, 6.05), 0xffd9a0, 0.5, 0.45);
+  // Bloom-free glow: additive sprites around the lamp bulb, the monitor, the moon and the hallway lights
+  addGlow(scene, parts.lampPos.clone(), 0xffc27a, 0.7, 0.55);
+  addGlow(scene, new THREE.Vector3(0.15, 1.62, -1.1), 0x6fb8ff, 1.4, 0.2);
+  addGlow(scene, new THREE.Vector3(0.9, 2.1, -1.8), 0x9db8ff, 1.4, 0.2);
+  for (const [x, z] of hall3d.ceilingLights.filter((_, i) => i % 2 === 0)) addGlow(scene, new THREE.Vector3(x, 2.7, z), 0xcfe8ff, 2.2, 0.22);
+  addGlow(scene, new THREE.Vector3(STATION.lamp.x + 0.24, 1.14, STATION.lamp.z), 0xffd9a0, 0.5, 0.45);
+  addGlow(scene, new THREE.Vector3(STATION.screen.x, 1.07, STATION.screen.z - 0.1), 0xb8dcff, 0.9, 0.18);
 
   const camera = new THREE.PerspectiveCamera(62, 1.6, 0.05, 40);
   camera.rotation.order = 'YXZ';
@@ -170,8 +224,13 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
   // Things that can hide a hotspot or be clicked: every solid mesh
   const solids = [];
   scene.traverse((o) => { if (o.isMesh && !(o.material.transparent && o.material.opacity < 0.95) && o.geometry.type !== 'CircleGeometry') solids.push(o); });
-  const items = hotspots.map((h) => ({ id: h.id, p: new THREE.Vector3(...h.pos3d), w: 130, h: 44 }));
-  const byId = Object.fromEntries(items.map((i) => [i.id, i]));
+  const mk = (list) => list.map((h) => ({ id: h.id, p: new THREE.Vector3(...h.pos3d), w: 130, h: 44 }));
+  const items1 = mk(hotspots), items2 = mk([{ id: 'phone', pos3d: [STATION.phone.x, STATION.phone.y + 0.1, STATION.phone.z] }]);
+  let items = items1, byId = Object.fromEntries(items.map((i) => [i.id, i]));
+  let sceneNo = 1, spots = SPOTS;
+  const provider = buildProvider(); provider.visible = false; scene.add(provider); // added after `solids`: it never hides a marker
+  let fig = null; // the provider's walk: { t0, dur, pts, seg, len, resolve }
+  const idleWaiters = [];
 
   /* ---- pose ---- */
   const pose = { x: SPOTS.doorway.x, z: SPOTS.doorway.z, yaw: 0, pitch: 0 };
@@ -194,9 +253,10 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
     host.dataset.spot = spot || '';
     host.dataset.moving = String(!!tween);
     onPose && onPose({ ...pose, spot, moving: !!tween });
+    if (!tween) while (idleWaiters.length) idleWaiters.shift()();
   };
 
-  function animateTo(to, { dur, path }) {
+  function animateTo(to, { dur, path, follow = false }) {
     const target = { x: to.x, z: to.z, yaw: to.yaw, pitch: to.pitch };
     if (isInstant || dur <= 0) {
       tween = null; Object.assign(pose, target); pose.yaw = norm(pose.yaw); applyPose(); publish(); request(); return;
@@ -204,7 +264,7 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
     const pts = path || [[pose.x, pose.z], [to.x, to.z]];
     const seg = []; let len = 0;
     for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(d); len += d; }
-    tween = { t0: performance.now(), dur, pts, seg, len, from: { ...pose }, dyaw: norm(target.yaw - pose.yaw), to: target };
+    tween = { t0: performance.now(), dur, pts, seg, len, from: { ...pose }, dyaw: norm(target.yaw - pose.yaw), to: target, follow, curYaw: pose.yaw, lastNow: performance.now() };
     publish(); request();
   }
   function stepTween(now) {
@@ -214,14 +274,26 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
     while (i < tw.seg.length - 1 && d > tw.seg[i]) { d -= tw.seg[i]; i++; }
     const a = tw.pts[i], b = tw.pts[i + 1] || a, f = tw.seg[i] ? Math.min(1, d / tw.seg[i]) : 1;
     pose.x = a[0] + (b[0] - a[0]) * f; pose.z = a[1] + (b[1] - a[1]) * f;
-    pose.yaw = tw.from.yaw + tw.dyaw * e; pose.pitch = tw.from.pitch + (tw.to.pitch - tw.from.pitch) * e;
+    if (tw.follow && tw.len > 0.3) {
+      // Walking: look where you are going along the path, then settle on the final view in the last stretch.
+      const dx = b[0] - a[0], dz = b[1] - a[1];
+      const heading = Math.hypot(dx, dz) > 1e-4 ? Math.atan2(-dx, -dz) : tw.curYaw;
+      const dt = Math.min(0.1, (now - tw.lastNow) / 1000); tw.lastNow = now;
+      tw.curYaw += norm(heading - tw.curYaw) * (1 - Math.exp(-dt * 5));
+      const settle = Math.max(0, (k - 0.78) / 0.22), es = settle * settle * (3 - 2 * settle);
+      pose.yaw = tw.curYaw + norm(tw.to.yaw - tw.curYaw) * es;
+      const walkPitch = -0.04 + (tw.from.pitch + 0.04) * Math.max(0, 1 - k * 6);
+      pose.pitch = walkPitch + (tw.to.pitch - walkPitch) * es;
+    } else {
+      pose.yaw = tw.from.yaw + tw.dyaw * e; pose.pitch = tw.from.pitch + (tw.to.pitch - tw.from.pitch) * e;
+    }
     applyPose();
     if (k >= 1) { Object.assign(pose, tw.to); pose.yaw = norm(pose.yaw); tween = null; applyPose(); publish(); return false; }
     return true;
   }
 
   function spotPose(id) {
-    const s = SPOTS[id];
+    const s = spots[id];
     const [x, z] = collide(s.x, s.z);
     return { x, z, ...faceTo(x, z, ...s.look) };
   }
@@ -234,12 +306,14 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
     [x, z] = collide(x, z);
     return { spotId, x, z, ...faceTo(x, z, it.p.x, it.p.y, it.p.z) };
   }
-  const travel = (to, { smooth }) => {
+  const travel = (to, { smooth, walk = false }) => {
     const path = findPath([pose.x, pose.z], [to.x, to.z]);
     let len = 0; for (let i = 1; i < path.length; i++) len += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]);
     const turnOnly = len < 0.05;
-    const dur = smooth ? Math.max(turnOnly ? 350 : 700, Math.min(3500, (len / 1.5) * 1000)) : 300;
-    animateTo(to, { dur, path });
+    // `walk` is a scene change: always a real walk along the path (a cut when motion is reduced).
+    const dur = walk ? Math.max(900, Math.min(5000, (len / 1.9) * 1000)) : smooth ? Math.max(turnOnly ? 350 : 700, Math.min(3500, (len / 1.5) * 1000)) : 300;
+    animateTo(to, { dur, path, follow: walk || (smooth && len > 1.2) });
+    return dur;
   };
 
   /* ---- hotspots: projection, distance, view and occlusion ---- */
@@ -284,6 +358,7 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
     raf = 0;
     if (disposed || !active) return;
     const moving = stepTween(now);
+    const walkingFig = stepFigure(now);
     if (!moving && !interacting && hotStale && now - lastHot > 90) { updateHotspots(); }
     const idle = isPlaying && !moving && !interacting;
     if (idle && !dirty && now - last < 33) { request(); return; }
@@ -296,7 +371,20 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
     renderer.render(scene, camera);
     frames += 1; host.dataset.frames = String(frames);
     dirty = false; last = now;
-    if (moving || isPlaying || interacting || hotStale) request();
+    if (moving || walkingFig || isPlaying || interacting || hotStale) request();
+  }
+  function stepFigure(now) {
+    const f = fig; if (!f) return false;
+    const k = Math.min(1, (now - f.t0) / f.dur);
+    let d = k * f.len, i = 0;
+    while (i < f.seg.length - 1 && d > f.seg[i]) { d -= f.seg[i]; i++; }
+    const a = f.pts[i], b = f.pts[i + 1] || a, u = f.seg[i] ? Math.min(1, d / f.seg[i]) : 1;
+    provider.position.set(a[0] + (b[0] - a[0]) * u, 0, a[1] + (b[1] - a[1]) * u);
+    if (Math.hypot(b[0] - a[0], b[1] - a[1]) > 1e-4) provider.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]);
+    poseWalk(provider, (now - f.t0) / 140, k < 1);
+    dirty = true;
+    if (k >= 1) { fig = null; poseWalk(provider, 0, false); const r = f.resolve; r && r(); return false; }
+    return true;
   }
 
   function resize() {
@@ -322,10 +410,42 @@ export function createWorld({ host, chart, hotspots, playing = true, instant = f
   publish();
 
   return {
-    pose, items,
+    pose, get items() { return items; },
     get spot() { return spot; },
     get moving() { return !!tween; },
-    goToSpot(id, { smooth = false } = {}) { if (!SPOTS[id]) return; spot = id; travel(spotPose(id), { smooth }); },
+    goToSpot(id, { smooth = false, walk = false } = {}) { if (!spots[id]) return 0; spot = id; return travel(spotPose(id), { smooth, walk }); },
+    get spots() { return spots; },
+    // Scene 2 swaps the walkable area (room, doorway, hallway), the Go to spots and the markers.
+    setScene(n) {
+      sceneNo = n; setRegion(n === 2 ? 2 : 1);
+      spots = n === 2 ? SPOTS2 : SPOTS; items = n === 2 ? items2 : items1; byId = Object.fromEntries(items.map((i) => [i.id, i]));
+      hotStale = true; request();
+    },
+    // Resolves when the camera is not moving (at once if it already is not).
+    whenIdle() { return tween ? new Promise((r) => idleWaiters.push(r)) : Promise.resolve(); },
+    finishMove() { if (tween) { const t = tween.to; tween = null; Object.assign(pose, t); pose.yaw = norm(pose.yaw); applyPose(); publish(); request(); } },
+    // Back in Room 12 after the call: the camera walks (or cuts) to a spot facing the doorway.
+    returnToRoom({ smooth = true } = {}) {
+      spot = '';
+      const to = { x: 1.3, z: 1.6 }; to.yaw = faceTo(to.x, to.z, 2.2, 1.2, 4.0).yaw; to.pitch = -0.02;
+      const path = findPath([pose.x, pose.z], [to.x, to.z]);
+      let len = 0; for (let i = 1; i < path.length; i++) len += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]);
+      const dur = smooth ? Math.max(900, Math.min(5000, (len / 1.9) * 1000)) : 0;
+      animateTo(to, { dur, path, follow: true });
+      return dur;
+    },
+    // The provider walks from the hallway to the doorway of Room 12. Resolves when they arrive.
+    providerArrives({ smooth = true } = {}) {
+      const pts = [[0.5, 5.0], [2.2, 4.6], [2.2, 3.9]];
+      provider.visible = true; provider.position.set(pts[0][0], 0, pts[0][1]);
+      const arrive = () => { provider.position.set(pts[2][0], 0, pts[2][1]); provider.rotation.y = Math.PI; poseWalk(provider, 0, false); dirty = true; request(); };
+      if (!smooth) { arrive(); return Promise.resolve(); }
+      const seg = []; let len = 0;
+      for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(d); len += d; }
+      return new Promise((resolve) => { fig = { t0: performance.now(), dur: (len / 0.95) * 1000, pts, seg, len, resolve }; request(); });
+    },
+    finishFigure() { const f = fig; if (!f) return; fig = null; const e = f.pts[f.pts.length - 1]; provider.position.set(e[0], 0, e[1]); provider.rotation.y = Math.PI; poseWalk(provider, 0, false); dirty = true; request(); f.resolve && f.resolve(); },
+    hideProvider() { fig = null; provider.visible = false; dirty = true; request(); },
     examine(id, { smooth = false } = {}) { if (!byId[id]) return; const p = examinePose(id); spot = ''; travel(p, { smooth }); },
     // One step of `d` metres: forward (+) / back (-) and right (+) / left (-), along the way you face.
     step(fwd, right, { smooth = false } = {}) {
