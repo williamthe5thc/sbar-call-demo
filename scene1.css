@@ -283,3 +283,8 @@ textarea { width: 100%; font: inherit; color: var(--text); background: var(--btn
 @media (prefers-reduced-motion: reduce) {
   .fade.go { animation: none; }
 }
+
+/* Mastery: the call is over, so the phone button goes away, and the docked
+   record sits below the title instead of covering it. */
+body[data-phase="mastery"] #pickup { display: none; }
+@media (min-width: 720px) { .modal.dock { padding-top: 76px; } }
