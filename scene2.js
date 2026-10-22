@@ -252,7 +252,10 @@ export function createCall(deps) {
     clearTimers(); cancelSpeech();
     st.done = true; st.paused = false;
     $$('.line.current', txList).forEach((el) => el.classList.remove('current'));
+    // Pause, Next and Show all are about to be hidden; if one has focus, hand it to See feedback.
+    const hadFocus = [controls.pause, controls.next, controls.all].includes(document.activeElement);
     syncControls();
+    if (hadFocus) controls.see.focus();
   }
   function startTick() {
     clearInterval(st.tick);

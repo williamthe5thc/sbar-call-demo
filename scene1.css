@@ -288,3 +288,14 @@ textarea { width: 100%; font: inherit; color: var(--text); background: var(--btn
    record sits below the title instead of covering it. */
 body[data-phase="mastery"] #pickup { display: none; }
 @media (min-width: 720px) { .modal.dock { padding-top: 76px; } }
+
+/* Focus inside panels that clip their contents: draw the ring inside the button. */
+.ph-btn:focus-visible, .obtn:focus-visible { outline-offset: -5px; box-shadow: inset 0 0 0 2px var(--focus-halo); }
+
+/* The 3D view's focus ring sits above the canvas (an outline on .view is painted
+   under it) and is bright on the dark night scene, with a dark edge for light areas. */
+.view:focus-visible { outline: none; box-shadow: none; }
+.view:focus-visible::after {
+  content: ''; position: absolute; inset: 6px; z-index: 1; pointer-events: none; border-radius: 6px;
+  border: 4px solid #ffd166; box-shadow: 0 0 0 3px #03060c, inset 0 0 0 3px #03060c;
+}

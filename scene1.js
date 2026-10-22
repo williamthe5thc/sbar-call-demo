@@ -24,6 +24,8 @@ const SCENES = {
   2: { sub: 'Scene 2: the call (immersive beta)', heading: 'Scene 2: the call', title: 'Scene 2: the call' },
 };
 let SPOT_LABELS = SPOT_SETS[1];
+let baseCaption = 'Look around the room. Select objects to examine them.';
+let movingTo = null; // spot id while a Go to move is under way
 
 const view = $('#view'), ui = $('#ui');
 const state = { scene: 1, phase: 'start', started: false, style: 'jump', keys: true, notes: [], active: null, world: null, playing: !reduced(), lastSpot: null, announceView: false };
@@ -89,7 +91,7 @@ function buildGoto(n) {
 }
 buildGoto(1);
 $('#objects-count').textContent = `(${ASSESS.length})`;
-$('#objects-list').innerHTML = ASSESS.map((h) => `<li><button type="button" class="obtn" data-id="${h.id}" aria-controls="card"><span class="nm">${esc(h.label)}</span><span class="meta"></span></button></li>`).join('');
+$('#objects-list').innerHTML = ASSESS.map((h) => `<li><button type="button" class="obtn" data-id="${h.id}" aria-controls="card"><span class="nm">${esc(h.label)}</span><span class="sr">, </span><span class="meta"></span></button></li>`).join('');
 $('#hotspots').innerHTML = [...ASSESS, { id: 'phone', label: 'Phone' }].map((h) => `<button type="button" class="hs" data-id="${h.id}" data-show="false" tabindex="-1" aria-hidden="true"><span class="dot" aria-hidden="true"></span><span>${esc(h.label)}</span></button>`).join('');
 const hsEl = Object.fromEntries($$('.hs').map((b) => [b.dataset.id, b]));
 const obEl = Object.fromEntries($$('.obtn').map((b) => [b.dataset.id, b]));
@@ -168,13 +170,17 @@ $('#goto-toggle').addEventListener('click', () => {
 
 const card = $('#card');
 // Turning a phone or narrowing the window: keep a single panel open so the room stays visible.
-narrowMq.addEventListener('change', () => {
-  if (!narrowMq.matches) return;
+// The resize event backs up the media-query change event, which does not always fire.
+let wasNarrow = narrow();
+const onNarrowChange = () => { const n = narrow(); if (n && !wasNarrow) tidyForNarrow(); wasNarrow = n; };
+narrowMq.addEventListener('change', onNarrowChange);
+window.addEventListener('resize', onNarrowChange);
+function tidyForNarrow() {
   let kept = !card.hidden;
   for (const q of Object.values(panels)) { if (q.body.hidden) continue; if (kept) setOpen(q.btn, q.body, false); else kept = true; }
   if (kept && gotoEl.dataset.open === 'true') closeGoto();
   refreshLayout();
-});
+}
 
 /* ---------- the findings card ---------- */
 
@@ -186,7 +192,7 @@ function showCard(h) {
   card.hidden = false; stackAdd('card');
   refreshLayout();
 }
-function hideCard() { if (card.hidden) return; stopReading(); card.hidden = true; stackDel('card'); refreshLayout(); }
+function hideCard() { if (card.hidden) return; stopReading(); card.hidden = true; stackDel('card'); $('#caption').textContent = baseCaption; refreshLayout(); }
 $('#card-close').addEventListener('click', () => {
   const id = state.active;
   hideCard();
@@ -239,6 +245,7 @@ $('#goto-list').addEventListener('click', (e) => {
   fade();
   state.world.goToSpot(id, { smooth: smoothOn() });
   $('#caption').textContent = `Moving to: ${SPOT_LABELS[id]}.`;
+  movingTo = id;
   state.announceView = true;
   announce(`Moving to ${SPOT_LABELS[id]}.`);
   if (narrow()) { closeGoto(); $('#goto-toggle').focus(); refreshLayout(); }
@@ -253,6 +260,8 @@ $$('[data-look]').forEach((b) => b.addEventListener('click', () => {
 /* ---------- keyboard: only while the 3D view has focus ---------- */
 
 const held = new Map();
+const pressedAt = new Map();
+const MIN_HOLD = 180; // ms: a press shorter than this is a tap
 let loopId = 0, lastT = 0;
 function loop(now) {
   loopId = 0;
@@ -286,6 +295,7 @@ view.addEventListener('keydown', (e) => {
   const w = state.world;
   if (smoothOn()) {
     held.set(e.key.toLowerCase(), act);
+    if (!e.repeat) pressedAt.set(e.key.toLowerCase(), performance.now());
     if (!loopId) { w.setInteracting(true); setBusy(true); loopId = requestAnimationFrame(loop); }
     return;
   }
@@ -294,8 +304,18 @@ view.addEventListener('keydown', (e) => {
   else if (act === 'turnL') w.turn(TURN); else if (act === 'turnR') w.turn(-TURN);
   else if (act === 'lookU') w.look(LOOK); else if (act === 'lookD') w.look(-LOOK);
 });
-view.addEventListener('keyup', (e) => { held.delete(e.key.toLowerCase()); });
-view.addEventListener('blur', () => { held.clear(); $('#keyhint').hidden = true; });
+view.addEventListener('keyup', (e) => {
+  const k = e.key.toLowerCase(), t0 = pressedAt.get(k), act = held.get(k);
+  held.delete(k); pressedAt.delete(k);
+  // A quick tap in smooth style still moves: a small fixed step, so it works at any frame rate.
+  if (t0 === undefined || !act || !state.world || performance.now() - t0 >= MIN_HOLD) return;
+  const w = state.world;
+  if (act === 'fwd') w.step(0.3, 0); else if (act === 'back') w.step(-0.3, 0);
+  else if (act === 'left') w.step(0, -0.25); else if (act === 'right') w.step(0, 0.25);
+  else if (act === 'turnL') w.turn(TURN / 2); else if (act === 'turnR') w.turn(-TURN / 2);
+  else if (act === 'lookU') w.look(LOOK / 2); else if (act === 'lookD') w.look(-LOOK / 2);
+});
+view.addEventListener('blur', () => { held.clear(); pressedAt.clear(); $('#keyhint').hidden = true; });
 view.addEventListener('focus', () => { $('#keyhint').hidden = !(state.keys && state.started); });
 
 /* ---------- pointer: drag to look, click an object to examine it ---------- */
@@ -373,6 +393,8 @@ function layoutHotspots(list) {
   }
   if (state.announceView) {
     state.announceView = false;
+    if (movingTo && card.hidden) $('#caption').textContent = `At: ${SPOT_LABELS[movingTo]}. ${baseCaption}`;
+    movingTo = null;
     const names = list.filter((i) => i.show).map((i) => (byId[i.id] ? byId[i.id].label : 'Phone'));
     announce(names.length ? `In view: ${names.join(', ')}.` : 'No examinable objects in view from here.');
   }
@@ -481,7 +503,8 @@ function arrivedAtStation() {
   state.phase = 'station'; document.body.dataset.phase = 'station';
   lockBars(false);
   $('#skip-walk').hidden = true;
-  $('#caption').textContent = "You are at the nurses' station. The phone is on the desk. Pick up the phone when you are ready to call.";
+  baseCaption = "You are at the nurses' station. The phone is on the desk. Pick up the phone when you are ready to call.";
+  $('#caption').textContent = baseCaption;
   announce("You are at the nurses' station. The phone is on the desk. Pick up the phone when you are ready.");
   if (document.activeElement === $('#skip-walk') || document.activeElement === document.body) $('#scene-heading').focus();
 }
@@ -525,7 +548,8 @@ function startOver() {
   setSceneUi(1);
   state.phase = 'play'; document.body.dataset.phase = 'play';
   setTitle(SCENES[1].title);
-  $('#caption').textContent = 'Look around the room. Select objects to examine them.';
+  baseCaption = 'Look around the room. Select objects to examine them.';
+  $('#caption').textContent = baseCaption;
   fade(); w.goToSpot('doorway', { smooth: false });
   $('#scene-heading').focus();
   announce('Starting over. Scene 1, the bedside assessment. You are at the doorway.');

@@ -247,7 +247,8 @@ test('the overlays never cover each other, at desktop and phone sizes', async ({
   await page.locator('#notes-btn').click();
   await check();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(300);
+  // On a phone only the findings card stays open; wait for the resize to be handled (software WebGL is slow).
+  await page.waitForFunction(() => document.querySelector('#notes-body').hidden && document.querySelector('#objects-body').hidden, null, { timeout: 15000 });
   await check();
   await page.locator('#goto-toggle').click();
   await page.waitForTimeout(300); // let the stacked layout settle
@@ -397,4 +398,58 @@ test('finishing with nothing examined is allowed and says so gently', async ({ p
 test('the standard version still opens on its intro without the handoff', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
+});
+
+test('focus rings are not clipped by their panels, and the 3D view ring shows above the canvas', async ({ page }) => {
+  await begin(page);
+  // A ring (outline plus offset) must fit inside every ancestor that clips its overflow.
+  const ringFits = (sel) => page.evaluate((s) => {
+    const el = document.activeElement;
+    if (!el || !el.matches(s)) return `focus is not on ${s}`;
+    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    const out = Math.max(0, parseFloat(cs.outlineOffset) + parseFloat(cs.outlineWidth));
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const ac = getComputedStyle(a);
+      if (ac.overflow === 'visible' && ac.overflowX === 'visible') continue;
+      const b = a.getBoundingClientRect();
+      if (r.left - out < b.left - 0.5 || r.right + out > b.right + 0.5 || r.top - out < b.top - 0.5 || r.bottom + out > b.bottom + 0.5) return `ring clipped by ${a.className || a.tagName}`;
+    }
+    return 'ok';
+  }, sel);
+  for (const sel of ['#notes-btn', '#objects-btn', '.obtn[data-id="monitor"]']) {
+    await tabTo(page, sel);
+    expect(await ringFits(sel)).toBe('ok');
+  }
+  await tabTo(page, '#view');
+  const ring = await view(page).evaluate((el) => getComputedStyle(el, '::after').borderTopColor);
+  expect(ring).toBe('rgb(255, 209, 102)');
+});
+
+test('Objects nearby buttons read the name and the status as separate words', async ({ page }) => {
+  await begin(page);
+  await expect(page.getByRole('button', { name: /^Monitor ?, (in view|not in view)/ })).toBeVisible();
+});
+
+test('a quick tap of a movement key still moves in smooth style', async ({ page }) => {
+  await load(page);
+  await page.locator('input[name="style"][value="smooth"]').check();
+  await page.locator('#start-btn').click();
+  await view(page).focus();
+  const p0 = await pose(page);
+  await page.keyboard.press('e'); // keydown and keyup with no time between them
+  await page.waitForTimeout(600);
+  const p1 = await pose(page);
+  expect(Math.abs(p1.yaw - p0.yaw)).toBeGreaterThan(0.05);
+});
+
+test('the scene caption says where you are after a move, and resets when the findings close', async ({ page }) => {
+  await begin(page);
+  await page.locator('#goto-list [data-spot="monitor"]').click();
+  await settle(page);
+  await expect(page.locator('#caption')).toHaveText(/^At: Monitor\./, { timeout: 10000 });
+  await page.locator('.obtn[data-id="monitor"]').click();
+  await expect(page.locator('#caption')).toContainText('Examining: Monitor');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#card')).toBeHidden();
+  await expect(page.locator('#caption')).toHaveText('Look around the room. Select objects to examine them.');
 });

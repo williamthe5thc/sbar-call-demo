@@ -172,6 +172,8 @@ test('captions advance by themselves; Pause and Next work; the whole transcript 
   await page.locator('#cap-pause').click();
   await page.locator('#cap-next').click();
   await expect(page.locator('#cap-see')).toBeVisible();
+  // Next had focus and is now hidden, so focus moves to See feedback instead of falling to the page.
+  await expect(page.locator('#cap-see')).toBeFocused();
   await expect(lines).toHaveCount(7);
   await expect(page.locator('#tx-list')).toContainText('Please come to the bedside to evaluate him.');
   await expect(page.locator('#tx-status')).toContainText('The whole transcript is above.');
